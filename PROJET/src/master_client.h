@@ -14,6 +14,13 @@
 #define ORDER_HIGHEST_PRIME       3
 #define ORDER_COMPUTE_PRIME_LOCAL 4   // ne concerne pas le master
 
+#define NOM_FICHIER "master_client.h"
+#define NUMERO 1
+
+#define ECRITURE_CLIENT "ecriture"
+#define MODE 0641
+#define LECTURE_CLIENT "lecture"
+
 // bref n'hésitez à mettre nombre de fonctions avec des noms explicites
 // pour masquer l'implémentation
 
