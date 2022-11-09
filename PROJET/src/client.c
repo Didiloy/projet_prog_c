@@ -5,7 +5,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <sys/stat.h>
 #include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "myassert.h"
 
@@ -77,6 +83,66 @@ static int parseArgs(int argc, char * argv[], int *number)
 }
 
 
+int attendrePassage(){
+    key_t cleClient = ftok(NOM_FICHIER,NUMERO);
+    myassert(cleClient != -1,"Impossible de créer la clé\n");
+
+    int semClient = semget(cleClient,1,0641);
+    myassert(semClient != -1,"Impossible de créer le sémaphore client\n");
+
+    struct sembuf operation; 
+    operation.sem_num = 0; 
+    operation.sem_op = -1; 
+    operation.sem_flg = 0;
+
+    int ret = semop(semClient, &operation, 1);
+    myassert(ret != -1,"Impossible de faire une opération sur la sémaphore depuis le clien");
+}
+
+int envoyerValeurAlea(int fd_Ecriture){
+    //TODO générer une valeur aléatoire et l'envoyer au master et retourner la valeur envoyer
+    
+}
+
+void endCritique(int sem,int ecriture,int lecture){
+
+    int ret = close(ecriture);
+    assert(ret == 0);
+
+    ret = close(lecture);
+    assert(ret == 0);
+
+    struct sembuf operation; 
+    operation.sem_num = 0; 
+    operation.sem_op = +1; 
+    operation.sem_flg = 0;
+
+    ret = semop(sem, &operation, 1);
+    myassert(ret != -1,"Impossible de faire une opération sur la sémaphore depuis le clien");
+
+    
+}
+
+void afficherReponse(int order, int reponse){
+    switch (order)
+    {
+    case ORDER_STOP:
+        if (reponse == STOPPED)
+        {
+            printf("le master c'est bien arréter");
+        }else{
+            printf("le master ne c'est pas arréter");
+        }
+        break;
+    case ORDER_HOW_MANY_PRIME:
+        printf("il y a eu %d demande",reponse);
+        break;
+    case ORDER_HIGHEST_PRIME:
+        printf("le nombre le plus grand demander est %d",reponse);
+        break;
+    }
+}
+
 /************************************************************************
  * Fonction principale
  ************************************************************************/
@@ -114,6 +180,59 @@ int main(int argc, char * argv[])
     //
     // N'hésitez pas à faire des fonctions annexes ; si la fonction main
     // ne dépassait pas une trentaine de lignes, ce serait bien.
+
+    if(order == ORDER_COMPUTE_PRIME_LOCAL){
+        //TODO Je sais pas
+    }
+    else{
+        //entrer en section critique
+        int sem = attendrePassage();
+
+        //ouvrir les tubes nommés
+        int fd_Ecriture = open(ECRITURE_CLIENT, O_WRONLY);
+        myassert(fd_Ecriture != -1,"Impossible d'ouvrire le tube écriture depuis le client");
+
+        int fd_Lecture = open(LECTURE_CLIENT, O_RDONLY);
+        myassert(fd_Lecture != -1,"Impossible d'ouvrire le tube lecture depuis le client");
+
+        //envoyer l'ordre et les données éventuelles au master
+        int ret = write(fd_Ecriture, order, sizeof(char) * (1 + strlen(order)));
+        myassert(ret != -1,"Impossible d'écrire dans le tube depuis le client");
+
+        if (order == ORDER_COMPUTE_PRIME){
+            //envoyer le nombre N
+            int nombre = envoyerValeurAlea(fd_Ecriture);
+
+            //attendre la réponse sur le second tube
+            bool reponse;
+            ret = read(fd_Lecture, reponse, sizeof(bool));
+            myassert(ret != -1,"Impossible de récupérer la réponse dans le tube depuis le client");
+
+            //débloquer les resource
+            endCritique(sem,fd_Ecriture,fd_Lecture);
+
+            //afficher résultat
+            if(reponse == true){
+                printf("%d est un nombre premier",nombre);
+            }
+            else{
+                printf("%d n'est pas un nombre premier",nombre);
+            }
+        }
+        else{
+            //attendre la réponse sur le second tube
+            int reponse;
+            ret = read(fd_Lecture, reponse, sizeof(int));
+            myassert(ret != -1,"Impossible de récupérer la réponse dans le tube depuis le client");
+
+            //débloquer les resource
+            endCritique(sem,fd_Ecriture,fd_Lecture);
+
+            //afficher résultat
+            afficherReponse(order,reponse);
+        }
+
+    }  
     
     return EXIT_SUCCESS;
 }
