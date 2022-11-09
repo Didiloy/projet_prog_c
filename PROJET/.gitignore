@@ -1,2 +1,5 @@
-./src/*.o
-./src/*.d
+**/*.d
+**/*.o
+**/clients
+**/master
+**/worker
