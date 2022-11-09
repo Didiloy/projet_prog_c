@@ -60,6 +60,7 @@ void loop(int writeToWorker, int receiveFromWorker)
         myassert(ret != -1, "Impossible de lire dans le tube de lecture du client\n");
 
         int confirmFromWorker, res, orderToSend;
+        printf("j'ai recu un ordre du client %d\n", order);
 
         switch (order)
         {
