@@ -79,7 +79,7 @@ static int parseArgs(int argc, char * argv[], int *number)
              usage(argv[0], "le nombre doit être >= 2");
     }       
     
-    return order;n
+    return order;
 }
 
 
@@ -97,21 +97,23 @@ int attendrePassage(){
 
     int ret = semop(semClient, &operation, 1);
     myassert(ret != -1,"Impossible de faire une opération sur la sémaphore depuis le clien");
+
+    return semClient;
 }
 
 int envoyerValeurAlea(int fd_Ecriture){
     //TODO générer une valeur aléatoire et l'envoyer au master et retourner la valeur envoyer
     return 0;
-
+    
 }
 
 void endCritique(int sem,int ecriture,int lecture){
 
     int ret = close(ecriture);
-    assert(ret == 0);
+    myassert(ret == 0,"Impossible de fermer le tube écriture dans le client");
 
     ret = close(lecture);
-    assert(ret == 0);
+    myassert(ret == 0,"Impossible de fermer le tube lecture dans le client");
 
     struct sembuf operation; 
     operation.sem_num = 0; 
@@ -197,7 +199,7 @@ int main(int argc, char * argv[])
         myassert(fd_Lecture != -1,"Impossible d'ouvrire le tube lecture depuis le client");
 
         //envoyer l'ordre et les données éventuelles au master
-        int ret = write(fd_Ecriture, &order, sizeof(char) * (1 + strlen(order)));
+        int ret = write(fd_Ecriture, &order, sizeof(int));
         myassert(ret != -1,"Impossible d'écrire dans le tube depuis le client");
 
         if (order == ORDER_COMPUTE_PRIME){
