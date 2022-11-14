@@ -34,6 +34,6 @@ else
     echo "tubes détruits"
     /bin/rm $c2m $m2c
 fi
-$(which unlink) ecriture
-$(which unlink) lecture
+$(which unlink) ecriture_master_client
+$(which unlink) lecture_master_client
 echo "tubes détruits"
