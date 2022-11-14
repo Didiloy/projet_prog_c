@@ -59,7 +59,7 @@ void loop(int writeToWorker, int receiveFromWorker)
         ssize_t ret = read(tubeLectureClient, &order, sizeof(int));
         myassert(ret != -1, "Impossible de lire dans le tube de lecture du client\n");
 
-        int confirmFromWorker, res, orderToSend;
+        int confirmFromWorker, res, orderToSend, number;
         printf("j'ai recu un ordre du client %d\n", order);
 
         switch (order)
@@ -97,6 +97,9 @@ void loop(int writeToWorker, int receiveFromWorker)
         //       . récupérer la réponse
         //       . la transmettre au client
         case ORDER_COMPUTE_PRIME:
+            printf("J'ai bien recu l'odre de vérifier si le nombre est premier\n");
+            ret = read(tubeLectureClient, &number, sizeof(int));
+            myassert(ret != -1, "Impossible de lire dans le tube de lecture du client\n");
             break;
 
         // - si ORDER_HOW_MANY_PRIME
@@ -135,6 +138,7 @@ int main(int argc, char *argv[])
     myassert(cleClient != -1, "Impossible de créer la clé\n");
 
     int semClient = semget(cleClient, 1, IPC_CREAT | IPC_EXCL | 0641);
+    // vu avec Daniel Menevaux : sémaphore
     myassert(semClient != -1, "Impossible de créer le sémaphore client\n");
     // printf("%d\n", semClient);
     // mettre le sem a 1
