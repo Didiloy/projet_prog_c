@@ -87,7 +87,7 @@ int attendrePassage()
     key_t cleClient = ftok(NOM_FICHIER, NUMERO);
     myassert(cleClient != -1, "Impossible de créer la clé\n");
 
-    int semClient = semget(cleClient, 1, 0641);
+    int semClient = semget(cleClient, 1, 0);
     myassert(semClient != -1, "Impossible de créer le sémaphore client\n");
 
     struct sembuf operation;
@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
 {
     int number = 0;
     int order = parseArgs(argc, argv, &number);
-    printf("%d\n", order); // pour éviter le warning
+    printf("order  = %d\n", order); // pour éviter le warning
 
     // order peut valoir 5 valeurs (cf. master_client.h) :
     //      - ORDER_COMPUTE_PRIME_LOCAL
@@ -196,15 +196,19 @@ int main(int argc, char *argv[])
         int sem = attendrePassage();
 
         // ouvrir les tubes nommés
-        int fd_Ecriture = open(ECRITURE_CLIENT, O_WRONLY);
+        fprintf(stderr, "Je crée le fd ecriture\n");
+        int fd_Ecriture = open(LECTURE_MASTER_CLIENT, O_WRONLY);
+        fprintf(stderr, "J'ai créé le fd ecriture\n");
         myassert(fd_Ecriture != -1, "Impossible d'ouvrire le tube écriture depuis le client");
 
-        int fd_Lecture = open(LECTURE_CLIENT, O_RDONLY);
+        printf("Je crée le fd lecture\n");
+        int fd_Lecture = open(ECRITURE_MASTER_CLIENT, O_RDONLY);
         myassert(fd_Lecture != -1, "Impossible d'ouvrire le tube lecture depuis le client");
-
         // envoyer l'ordre et les données éventuelles au master
+        printf("Juste avant le write\n");
         int ret = write(fd_Ecriture, &order, sizeof(int));
         myassert(ret != -1, "Impossible d'écrire dans le tube depuis le client");
+        printf("J'ai envoyé l'ordre au master\n");
 
         if (order == ORDER_COMPUTE_PRIME)
         {

@@ -20,9 +20,9 @@
 #define NOM_FICHIER "master_client.h"
 #define NUMERO 1
 
-#define ECRITURE_CLIENT "ecriture"
+#define ECRITURE_MASTER_CLIENT "ecriture_master_client"
 #define MODE 0641
-#define LECTURE_CLIENT "lecture"
+#define LECTURE_MASTER_CLIENT "lecture_master_client"
 
 // bref n'hésitez à mettre nombre de fonctions avec des noms explicites
 // pour masquer l'implémentation
