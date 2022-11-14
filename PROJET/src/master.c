@@ -42,16 +42,16 @@ static void usage(const char *exeName, const char *message)
  ************************************************************************/
 void loop(int writeToWorker, int receiveFromWorker)
 {
-    printf("DANS la boucle \n");
+    printf("Dans la boucle \n");
     // boucle infinie :
     bool infini = true;
     while (infini)
     {
         // - ouverture des tubes (cf. rq client.c)
-        int tubeLectureClient = open(LECTURE_CLIENT, O_WRONLY);
+        int tubeLectureClient = open(LECTURE_MASTER_CLIENT, O_RDONLY);
         myassert(tubeLectureClient != -1, "Impossible d'ouvrir le tube de lecture du client\n");
 
-        int tubeEcritureClient = open(ECRITURE_CLIENT, O_RDONLY);
+        int tubeEcritureClient = open(ECRITURE_MASTER_CLIENT, O_WRONLY);
         myassert(tubeEcritureClient != -1, "Impossible d'ouvrir le tube d'écriture pour le client\n");
 
         // - attente d'un ordre du client (via le tube nommé)
@@ -68,6 +68,7 @@ void loop(int writeToWorker, int receiveFromWorker)
         //       . envoyer ordre de fin au premier worker et attendre sa fin
         //       . envoyer un accusé de réception au client
         case ORDER_STOP:
+            printf("J'ai bien recu l'odre de m'arreter\n");
             orderToSend = W_ORDER_STOP;
             res = write(writeToWorker, &orderToSend, sizeof(int));
             myassert(res != -1, "Impossible d'envoyer un ordre au worker depuis le master\n");
@@ -135,15 +136,25 @@ int main(int argc, char *argv[])
 
     int semClient = semget(cleClient, 1, IPC_CREAT | IPC_EXCL | 0641);
     myassert(semClient != -1, "Impossible de créer le sémaphore client\n");
+    // printf("%d\n", semClient);
+    // mettre le sem a 1
+    struct sembuf op;
+    op.sem_num = 0;
+    op.sem_op = +1;
+    op.sem_flg = 0;
+    int r = semop(semClient, &op, 1);
+    myassert(r != -1, "Impossible de passer le semaphore a 1.");
 
     int semTableau = semget(IPC_PRIVATE, 1, IPC_CREAT | IPC_EXCL | 0641);
     myassert(semTableau != -1, "Impossible de créer le sémaphore tableau\n");
+    // printf("%d\n", semTableau);
+    // TODO peut etre passer le semaphore a 1
 
     // - création des tubes nommés
-    int ret = mkfifo(ECRITURE_CLIENT, MODE);
+    int ret = mkfifo(ECRITURE_MASTER_CLIENT, MODE);
     myassert(ret != -1, "Impossible de créer le tube ecriture client\n");
 
-    ret = mkfifo(LECTURE_CLIENT, MODE);
+    ret = mkfifo(LECTURE_MASTER_CLIENT, MODE);
     myassert(ret != -1, "Impossible de créer le tube lecture client\n");
 
     // - création du premier worker
@@ -187,7 +198,6 @@ int main(int argc, char *argv[])
     {
         // boucle infinie
         loop(fds[0], fdToMaster[1]);
-
         // destruction des tubes nommés, des sémaphores, ...
         ret = semctl(semClient, 0, IPC_RMID);
         myassert(ret != -1, "Impossible de supprimer le sémaphore client\n");
@@ -195,14 +205,12 @@ int main(int argc, char *argv[])
         ret = semctl(semTableau, 0, IPC_RMID);
         myassert(ret != -1, "Impossible de supprimer le sémaphore tableau\n");
 
-        ret = unlink(ECRITURE_CLIENT);
+        ret = unlink(ECRITURE_MASTER_CLIENT);
         myassert(ret != -1, "Impossible de supprimer le tube ecriture client\n");
 
-        ret = unlink(LECTURE_CLIENT);
+        ret = unlink(LECTURE_MASTER_CLIENT);
         myassert(ret != -1, "Impossible de supprimer le tube lecture client\n");
     }
-
-    
 
     return EXIT_SUCCESS;
 }
