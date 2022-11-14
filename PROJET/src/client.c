@@ -87,7 +87,7 @@ int attendrePassage()
     key_t cleClient = ftok(NOM_FICHIER, NUMERO);
     myassert(cleClient != -1, "Impossible de créer la clé\n");
 
-    int semClient = semget(cleClient, 1, 0641);
+    int semClient = semget(cleClient, 1, 0);
     myassert(semClient != -1, "Impossible de créer le sémaphore client\n");
 
     struct sembuf operation;
@@ -101,10 +101,13 @@ int attendrePassage()
     return semClient;
 }
 
-int envoyerValeurAlea(int fd_Ecriture)
+int envoyerValeur(int fd_Ecriture, char * val)
 {
     // TODO générer une valeur aléatoire et l'envoyer au master et retourner la valeur envoyer
-    return 0;
+    int valeur = atoi(val);
+    write(fd_Ecriture,&valeur,sizeof(int));
+
+    return valeur;
 }
 
 void endCritique(int sem, int ecriture, int lecture)
@@ -209,7 +212,7 @@ int main(int argc, char *argv[])
         if (order == ORDER_COMPUTE_PRIME)
         {
             // envoyer le nombre N
-            int nombre = envoyerValeurAlea(fd_Ecriture);
+            int nombre = envoyerValeur(fd_Ecriture, argv[2]);
 
             // attendre la réponse sur le second tube
             bool reponse;

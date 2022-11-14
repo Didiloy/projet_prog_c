@@ -48,10 +48,10 @@ void loop(int writeToWorker, int receiveFromWorker)
     while (infini)
     {
         // - ouverture des tubes (cf. rq client.c)
-        int tubeLectureClient = open(LECTURE_CLIENT, O_RDONLY);
+        int tubeLectureClient = open(LECTURE_CLIENT, O_WRONLY);
         myassert(tubeLectureClient != -1, "Impossible d'ouvrir le tube de lecture du client\n");
 
-        int tubeEcritureClient = open(ECRITURE_CLIENT, O_WRONLY);
+        int tubeEcritureClient = open(ECRITURE_CLIENT, O_RDONLY);
         myassert(tubeEcritureClient != -1, "Impossible d'ouvrir le tube d'écriture pour le client\n");
 
         // - attente d'un ordre du client (via le tube nommé)
@@ -181,25 +181,28 @@ int main(int argc, char *argv[])
         args[4] = "\0";
 
         execv("worker", args);
+        
     }
     else
     {
         // boucle infinie
         loop(fds[0], fdToMaster[1]);
+
+        // destruction des tubes nommés, des sémaphores, ...
+        ret = semctl(semClient, 0, IPC_RMID);
+        myassert(ret != -1, "Impossible de supprimer le sémaphore client\n");
+
+        ret = semctl(semTableau, 0, IPC_RMID);
+        myassert(ret != -1, "Impossible de supprimer le sémaphore tableau\n");
+
+        ret = unlink(ECRITURE_CLIENT);
+        myassert(ret != -1, "Impossible de supprimer le tube ecriture client\n");
+
+        ret = unlink(LECTURE_CLIENT);
+        myassert(ret != -1, "Impossible de supprimer le tube lecture client\n");
     }
 
-    // destruction des tubes nommés, des sémaphores, ...
-    ret = semctl(semClient, 0, IPC_RMID);
-    myassert(ret != -1, "Impossible de supprimer le sémaphore client\n");
-
-    ret = semctl(semTableau, 0, IPC_RMID);
-    myassert(ret != -1, "Impossible de supprimer le sémaphore tableau\n");
-
-    ret = unlink(ECRITURE_CLIENT);
-    myassert(ret != -1, "Impossible de supprimer le tube ecriture client\n");
-
-    ret = unlink(LECTURE_CLIENT);
-    myassert(ret != -1, "Impossible de supprimer le tube lecture client\n");
+    
 
     return EXIT_SUCCESS;
 }
