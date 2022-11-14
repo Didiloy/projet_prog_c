@@ -101,11 +101,11 @@ int attendrePassage()
     return semClient;
 }
 
-int envoyerValeur(int fd_Ecriture, char * val)
+int envoyerValeur(int fd_Ecriture, char *val)
 {
     // TODO générer une valeur aléatoire et l'envoyer au master et retourner la valeur envoyer
     int valeur = atoi(val);
-    write(fd_Ecriture,&valeur,sizeof(int));
+    write(fd_Ecriture, &valeur, sizeof(int));
 
     return valeur;
 }
@@ -135,11 +135,11 @@ void afficherReponse(int order, int reponse)
     case ORDER_STOP:
         if (reponse == STOPPED)
         {
-            printf("le master c'est bien arréter");
+            printf("le master s'est bien stoppé");
         }
         else
         {
-            printf("le master ne c'est pas arréter");
+            printf("le master ne s'est pas stoppé");
         }
         break;
     case ORDER_HOW_MANY_PRIME:

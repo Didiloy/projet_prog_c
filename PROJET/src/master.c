@@ -76,7 +76,7 @@ void loop(int writeToWorker, int receiveFromWorker)
             myassert(res != -1, "Impossible de recevoir un message du worker dans le master\n'");
             if (confirmFromWorker == W_STOPPED)
             {
-                orderToSend = STOPPED;
+                orderToSend = STOPPED; // the master will stop
                 res = write(tubeEcritureClient, &orderToSend, sizeof(int));
                 myassert(res != -1, "Impossible d'écrire au client depuis le master\n");
             }
@@ -192,7 +192,6 @@ int main(int argc, char *argv[])
         args[4] = "\0";
 
         execv("worker", args);
-        
     }
     else
     {
