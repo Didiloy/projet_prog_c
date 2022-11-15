@@ -16,6 +16,8 @@
 
 // Reponses possibles du master au client
 #define STOPPED 5
+#define M_NUMBER_IS_PRIME 6
+#define M_NUMBER_IS_NOT_PRIME 7
 
 #define NOM_FICHIER "master_client.h"
 #define NUMERO 1
