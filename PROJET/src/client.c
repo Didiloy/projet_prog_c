@@ -199,16 +199,12 @@ int main(int argc, char *argv[])
         int sem = attendrePassage();
 
         // ouvrir les tubes nommés
-        fprintf(stderr, "Je crée le fd ecriture\n");
         int fd_Ecriture = open(LECTURE_MASTER_CLIENT, O_WRONLY);
-        fprintf(stderr, "J'ai créé le fd ecriture\n");
         myassert(fd_Ecriture != -1, "Impossible d'ouvrire le tube écriture depuis le client");
 
-        printf("Je crée le fd lecture\n");
         int fd_Lecture = open(ECRITURE_MASTER_CLIENT, O_RDONLY);
         myassert(fd_Lecture != -1, "Impossible d'ouvrire le tube lecture depuis le client");
         // envoyer l'ordre et les données éventuelles au master
-        printf("Juste avant le write\n");
         int ret = write(fd_Ecriture, &order, sizeof(int));
         myassert(ret != -1, "Impossible d'écrire dans le tube depuis le client");
         printf("J'ai envoyé l'ordre au master\n");
@@ -219,15 +215,15 @@ int main(int argc, char *argv[])
             int nombre = envoyerValeur(fd_Ecriture, argv[2]);
 
             // attendre la réponse sur le second tube
-            bool reponse;
-            ret = read(fd_Lecture, &reponse, sizeof(bool));
+            int reponse;
+            ret = read(fd_Lecture, &reponse, sizeof(int));
             myassert(ret != -1, "Impossible de récupérer la réponse dans le tube depuis le client");
 
             // débloquer les resource
             endCritique(sem, fd_Ecriture, fd_Lecture);
 
             // afficher résultat
-            if (reponse == true)
+            if (reponse == M_NUMBER_IS_PRIME)
             {
                 printf("%d est un nombre premier", nombre);
             }

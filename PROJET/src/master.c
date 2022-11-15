@@ -43,6 +43,7 @@ static void usage(const char *exeName, const char *message)
 void loop(int writeToWorker, int receiveFromWorker)
 {
     printf("Dans la boucle \n");
+    int m = 2; // Plus grand nombre envoyé aux worker. 2 de base car on crée le premier worker avec 2
     // boucle infinie :
     bool infini = true;
     while (infini)
@@ -59,7 +60,7 @@ void loop(int writeToWorker, int receiveFromWorker)
         ssize_t ret = read(tubeLectureClient, &order, sizeof(int));
         myassert(ret != -1, "Impossible de lire dans le tube de lecture du client\n");
 
-        int confirmFromWorker, res, orderToSend, number;
+        int responseFromWorker, res, orderToSendToClient, number;
         printf("j'ai recu un ordre du client %d\n", order);
 
         switch (order)
@@ -69,15 +70,15 @@ void loop(int writeToWorker, int receiveFromWorker)
         //       . envoyer un accusé de réception au client
         case ORDER_STOP:
             printf("J'ai bien recu l'odre de m'arreter\n");
-            orderToSend = W_ORDER_STOP;
-            res = write(writeToWorker, &orderToSend, sizeof(int));
+            orderToSendToClient = W_ORDER_STOP;
+            res = write(writeToWorker, &orderToSendToClient, sizeof(int));
             myassert(res != -1, "Impossible d'envoyer un ordre au worker depuis le master\n");
-            res = read(receiveFromWorker, &confirmFromWorker, sizeof(int));
+            res = read(receiveFromWorker, &responseFromWorker, sizeof(int));
             myassert(res != -1, "Impossible de recevoir un message du worker dans le master\n'");
-            if (confirmFromWorker == W_STOPPED)
+            if (responseFromWorker == W_STOPPED)
             {
-                orderToSend = STOPPED; // the master will stop
-                res = write(tubeEcritureClient, &orderToSend, sizeof(int));
+                orderToSendToClient = STOPPED; // the master will stop
+                res = write(tubeEcritureClient, &orderToSendToClient, sizeof(int));
                 myassert(res != -1, "Impossible d'écrire au client depuis le master\n");
             }
             else
@@ -90,7 +91,7 @@ void loop(int writeToWorker, int receiveFromWorker)
         // - si ORDER_COMPUTE_PRIME
         //       . récupérer le nombre N à tester provenant du client
         //       . construire le pipeline jusqu'au nombre N-1 (si non encore fait) :
-        //             il faut connaître le plus nombre (M) déjà enovoyé aux workers
+        //             il faut connaître le plus grand nombre (M) déjà envoyé aux workers
         //             on leur envoie tous les nombres entre M+1 et N-1
         //             note : chaque envoie déclenche une réponse des workers
         //       . envoyer N dans le pipeline
@@ -100,6 +101,48 @@ void loop(int writeToWorker, int receiveFromWorker)
             printf("J'ai bien recu l'odre de vérifier si le nombre est premier\n");
             ret = read(tubeLectureClient, &number, sizeof(int));
             myassert(ret != -1, "Impossible de lire dans le tube de lecture du client\n");
+            printf("Je demande aux worker de vérifier si %d est premier.\n", number);
+            /**
+             * Si le nombre a calculer est plus petit que le plus grand nombre envoyer aux worker
+             *  on envoi juste le nombre, sinon on envoi tout les nombres entre le plus grand nombre -1
+             * puis après la boucle on renvoi le n pour tester si c'est premier
+             * envoyé et le nombre reçu du client
+             */
+            if (number > m)
+            {
+                printf("je rentre pour créer de worker\n");
+                for (int i = m + 1; i <= number - 1; i++) // créer la pipeline de worker
+                {
+                    // envoyer le nombre au premier worker
+                    ret = write(writeToWorker, &i, sizeof(int));
+                    myassert(ret != -1, "Impossible d'envoyer le nombre au worker");
+                    // attendre la réponse d'un des worker
+                    ret = read(receiveFromWorker, &responseFromWorker, sizeof(int));
+                    myassert(ret != -1, "Impossible de récupérer la réponse du worker");
+                }
+                m = number;
+            }
+            fprintf(stderr, "Je suis après le if \n");
+            // envoyer le nombre au premier worker
+            ret = write(writeToWorker, &number, sizeof(int));
+            perror("");
+            myassert(ret != -1, "Impossible d'envoyer le nombre au worker");
+            fprintf(stderr, "j'envoi le nombre au premier worker\n");
+            // attendre la réponse d'un des worker
+            ret = read(receiveFromWorker, &responseFromWorker, sizeof(int));
+            myassert(ret != -1, "Impossible de récupérer la réponse du worker");
+            printf("j'ai reçu un nombre du worker %d\n", responseFromWorker);
+
+            // Déclencher une erreur si la réponse du worker n'est pas une des réponses attendues
+            if (responseFromWorker != W_IS_PRIME && responseFromWorker != W_IS_NOT_PRIME)
+                myassert(responseFromWorker == W_IS_NOT_PRIME, "La réponse du worker n'est ni vrai ni faux");
+
+            orderToSendToClient = responseFromWorker == W_IS_PRIME ? M_NUMBER_IS_PRIME : M_NUMBER_IS_NOT_PRIME;
+
+            // Ecrire au client si le nombre est premier ou pas
+            res = write(tubeEcritureClient, &orderToSendToClient, sizeof(int));
+            myassert(res != -1, "Impossible d'écrire au client depuis le master\n");
+
             break;
 
         // - si ORDER_HOW_MANY_PRIME
@@ -165,13 +208,13 @@ int main(int argc, char *argv[])
 
     int fdToMaster[2];
     ret = pipe(fdToMaster);
-    myassert(ret != -1, "Impossible de créer le tube ecriture vers le master du worker\n");
-    close(fdToMaster[0]);
+    myassert(ret != -1, "Impossible de créer le tube lecture vers le master du worker\n");
+    close(fdToMaster[1]);
 
     int fds[2];
     ret = pipe(fds);
-    myassert(ret != -1, "Impossible de créer le tube lecture du précédent worker du worker\n");
-    close(fds[1]);
+    myassert(ret != -1, "Impossible de créer le tube ecriture du master vers le worker\n");
+    close(fds[0]);
 
     ret = fork();
     if (ret == 0)
@@ -200,7 +243,7 @@ int main(int argc, char *argv[])
     else
     {
         // boucle infinie
-        loop(fds[0], fdToMaster[1]);
+        loop(fds[1], fdToMaster[0]);
         // destruction des tubes nommés, des sémaphores, ...
         ret = semctl(semClient, 0, IPC_RMID);
         myassert(ret != -1, "Impossible de supprimer le sémaphore client\n");
