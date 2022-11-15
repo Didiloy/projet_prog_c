@@ -242,6 +242,9 @@ int main(int argc, char *argv[])
     }
     else
     {
+        int tmp;
+        ret = read(fdToMaster[0], &tmp, sizeof(int));
+        myassert(ret != -1, "Impossible de récupérer la réponse du worker");
         // boucle infinie
         loop(fds[1], fdToMaster[0]);
         // destruction des tubes nommés, des sémaphores, ...
