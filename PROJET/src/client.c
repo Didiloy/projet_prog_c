@@ -103,11 +103,27 @@ int attendrePassage()
 
 int envoyerValeur(int fd_Ecriture, char *val)
 {
-    // TODO générer une valeur aléatoire et l'envoyer au master et retourner la valeur envoyer
+    
     int valeur = atoi(val);
     write(fd_Ecriture, &valeur, sizeof(int));
 
     return valeur;
+
+
+    /*bool tab[valeur];
+    for(int i =0; i<valeur-2; i++){
+        tab[i] = true;
+    }
+    for(int i =0; i<valeur-2; i++){
+        int v = i+2;
+        write(fd_Ecriture, &v, sizeof(int));
+
+        bool retour;
+        read(fd_Lecture,&retour,sizeof(bool));
+        
+        tab[i] = retour;
+        
+    }*/
 }
 
 void endCritique(int sem, int ecriture, int lecture)
@@ -219,15 +235,15 @@ int main(int argc, char *argv[])
             int nombre = envoyerValeur(fd_Ecriture, argv[2]);
 
             // attendre la réponse sur le second tube
-            bool reponse;
-            ret = read(fd_Lecture, &reponse, sizeof(bool));
+            int reponse;
+            ret = read(fd_Lecture, &reponse, sizeof(int));
             myassert(ret != -1, "Impossible de récupérer la réponse dans le tube depuis le client");
 
             // débloquer les resource
             endCritique(sem, fd_Ecriture, fd_Lecture);
 
             // afficher résultat
-            if (reponse == true)
+            if (reponse == 6 /*a définir dans Master_Client*/)
             {
                 printf("%d est un nombre premier", nombre);
             }

@@ -10,4 +10,13 @@
 #define W_ORDER_STOP -2
 #define W_STOPPED -3
 
+typedef struct DonneeWorker{
+    int valeurAssocie;
+    bool aSuite;
+    int fdToMaster;
+    int fdToWorker;
+    int workerToWorker;
+    
+}DonneeWorker;
+
 #endif
