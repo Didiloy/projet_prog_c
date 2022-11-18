@@ -95,9 +95,8 @@ int creerSuite(int val)
         close(fds[0]);
 
         donnee.aSuite = true;
-
-        return fds[1];
     }
+    return fds[1];
 }
 
 /************************************************************************
@@ -121,6 +120,7 @@ void loop()
     {
         int order;
         read(donnee.fdToWorker, &order, sizeof(int));
+
         if (order == W_ORDER_STOP)
         {
             if (donnee.aSuite)
@@ -134,7 +134,7 @@ void loop()
                 int ret = W_STOPPED;
                 write(donnee.fdToMaster, &ret, sizeof(int));
                 close(donnee.fdToWorker);
-                close(donnee.fdToMaster);
+                // close(donnee.fdToMaster);
                 break;
             }
         }
