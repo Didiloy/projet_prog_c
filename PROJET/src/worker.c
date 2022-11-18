@@ -12,6 +12,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <math.h>
 
 #include "myassert.h"
 
@@ -25,7 +26,6 @@
 // a besoin : le nombre premier dont il a la charge, ...
 
 DonneeWorker donnee;
-
 
 /************************************************************************
  * Usage et analyse des arguments passés en ligne de commande
@@ -42,7 +42,7 @@ static void usage(const char *exeName, const char *message)
     exit(EXIT_FAILURE);
 }
 
-static void parseArgs(int argc, char * argv[] /*, structure à remplir*/)
+static void parseArgs(int argc, char *argv[] /*, structure à remplir*/)
 {
     if (argc != 4)
         usage(argv[0], "Nombre d'arguments incorrect");
@@ -52,22 +52,23 @@ static void parseArgs(int argc, char * argv[] /*, structure à remplir*/)
     donnee.valeurAssocie = atoi(argv[2]);
     donnee.fdToWorker = atoi(argv[3]);
     donnee.fdToMaster = atoi(argv[4]);
-
 }
 
-bool pasPremier(int val){
-    return val%donnee.valeurAssocie == 0;
-
+bool pasPremier(int val)
+{
+    return val % donnee.valeurAssocie == 0;
 }
 
-int creerSuite(int val){
-    //TODO créer suite et retourne le tube pour communiquer avec lui
+int creerSuite(int val)
+{
+    // TODO créer suite et retourne le tube pour communiquer avec lui
     int fds[2];
     int ret = pipe(fds);
     myassert(ret != -1, "Impossible de créer le tube ecriture du worker vers le worker\n");
-    
+
     ret = fork();
-    if (ret == 0){
+    if (ret == 0)
+    {
         close(fds[1]);
 
         char lecture[(int)((ceil(log10(fds[0])) + 1) * sizeof(char))]; // déclarer un tableau de caractère de la bonne taille
@@ -88,12 +89,11 @@ int creerSuite(int val){
         args[4] = "\0";
 
         execv("worker", args);
-
     }
-    else{
+    else
+    {
         close(fds[0]);
 
-        
         donnee.aSuite = true;
 
         return fds[1];
@@ -120,64 +120,66 @@ void loop()
     while (true)
     {
         int order;
-        read(donnee.fdToWorker,&order,sizeof(int));
-        if(order == W_ORDER_STOP){
-            if(donnee.aSuite){
-                write(donnee.workerToWorker, &order, sizeof(int) );
+        read(donnee.fdToWorker, &order, sizeof(int));
+        if (order == W_ORDER_STOP)
+        {
+            if (donnee.aSuite)
+            {
+                write(donnee.workerToWorker, &order, sizeof(int));
                 close(donnee.fdToWorker);
                 break;
-                
             }
-            else{
+            else
+            {
                 int ret = W_STOPPED;
-                write(donnee.fdToMaster,&ret,sizeof(int));
+                write(donnee.fdToMaster, &ret, sizeof(int));
                 close(donnee.fdToWorker);
                 close(donnee.fdToMaster);
                 break;
             }
         }
-        else{
-            if(order == donnee.valeurAssocie){
-                int ret = W_IS_PRIME; 
-                write(donnee.fdToMaster,&ret,sizeof(int));
+        else
+        {
+            if (order == donnee.valeurAssocie)
+            {
+                int ret = W_IS_PRIME;
+                write(donnee.fdToMaster, &ret, sizeof(int));
             }
-            else if(pasPremier(order)){
-                int ret = W_IS_NOT_PRIME; 
-                write(donnee.fdToMaster,&ret,sizeof(int));
+            else if (pasPremier(order))
+            {
+                int ret = W_IS_NOT_PRIME;
+                write(donnee.fdToMaster, &ret, sizeof(int));
             }
-            else if(donnee.aSuite){
-                
-                write(donnee.workerToWorker,&order,sizeof(int));
+            else if (donnee.aSuite)
+            {
+
+                write(donnee.workerToWorker, &order, sizeof(int));
             }
-            else{
+            else
+            {
                 donnee.workerToWorker = creerSuite(order);
             }
         }
-
     }
-    
 }
 
 /************************************************************************
  * Programme principal
  ************************************************************************/
 
-int main(int argc, char * argv[])
+int main(int argc, char *argv[])
 {
     parseArgs(argc, argv /*, structure à remplir*/);
-    
+
     // Si on est créé c'est qu'on est un nombre premier
     // Envoyer au master un message positif pour dire
     // que le nombre testé est bien premier
-    int a = W_IS_PRIME; 
-    write(donnee.fdToMaster,&a,sizeof(int));
-
+    int a = W_IS_PRIME;
+    write(donnee.fdToMaster, &a, sizeof(int));
 
     loop();
 
     // libérer les ressources : fermeture des files descriptors par exemple
-    
-
 
     return EXIT_SUCCESS;
 }
