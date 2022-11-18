@@ -44,6 +44,8 @@ void loop(int writeToWorker, int receiveFromWorker)
 {
     printf("Dans la boucle \n");
     int m = 2; // Plus grand nombre envoyé aux worker. 2 de base car on crée le premier worker avec 2
+    int nombreDeNombreCalcule = 0;
+    int plusGrandNombrePremierCalcule = 0;
     // boucle infinie :
     bool infini = true;
     while (infini)
@@ -103,7 +105,7 @@ void loop(int writeToWorker, int receiveFromWorker)
             myassert(ret != -1, "Impossible de lire dans le tube de lecture du client\n");
             printf("Je demande aux worker de vérifier si %d est premier.\n", number);
             /**
-             * Si le nombre a calculer est plus petit que le plus grand nombre envoyer aux worker
+             * Si le nombre a calculer est plus petit que le plus grand nombre envoyé aux worker
              *  on envoi juste le nombre, sinon on envoi tout les nombres entre le plus grand nombre -1
              * puis après la boucle on renvoi le n pour tester si c'est premier
              * envoyé et le nombre reçu du client
@@ -123,7 +125,7 @@ void loop(int writeToWorker, int receiveFromWorker)
                 m = number;
             }
             fprintf(stderr, "Je suis après le if \n");
-            // envoyer le nombre au premier worker
+            // envoyé le nombre au premier worker
             ret = write(writeToWorker, &number, sizeof(int));
             perror("");
             myassert(ret != -1, "Impossible d'envoyer le nombre au worker");
@@ -143,11 +145,23 @@ void loop(int writeToWorker, int receiveFromWorker)
             res = write(tubeEcritureClient, &orderToSendToClient, sizeof(int));
             myassert(res != -1, "Impossible d'écrire au client depuis le master\n");
 
+            // ajouter +1 au nombre de nombres premier calculés par le master pour pouvoir l'envoyer en cas de demande du client
+            nombreDeNombreCalcule += 1;
+
+            // changer la valeur du plus grand nombre premier calculé si le nombre est premier
+            if (orderToSendToClient == W_IS_PRIME)
+            {
+                if (number > plusGrandNombrePremierCalcule)
+                    plusGrandNombrePremierCalcule = number;
+            }
             break;
 
         // - si ORDER_HOW_MANY_PRIME
         //       . transmettre la réponse au client
         case ORDER_HOW_MANY_PRIME:
+            // Envoyer au client le nombre de nombre premuer calculés
+            res = write(tubeEcritureClient, &nombreDeNombreCalcule, sizeof(int));
+            myassert(res != -1, "Impossible d'écrire au client depuis le master\n");
             break;
 
         // - si ORDER_HIGHEST_PRIME
@@ -156,6 +170,9 @@ void loop(int writeToWorker, int receiveFromWorker)
         // - attendre ordre du client avant de continuer (sémaphore : précédence)
         // - revenir en début de boucle
         case ORDER_HIGHEST_PRIME:
+            // Envoyer au client le plus grand nombre premier calculé
+            res = write(tubeEcritureClient, &plusGrandNombrePremierCalcule, sizeof(int));
+            myassert(res != -1, "Impossible d'écrire au client depuis le master\n");
             break;
 
         case ORDER_NONE:
@@ -163,7 +180,13 @@ void loop(int writeToWorker, int receiveFromWorker)
         }
         //
         // il est important d'ouvrir et fermer les tubes nommés à chaque itération
-        // voyez-vous pourquoi ?
+        // voyez-vous pourquoi
+        // - fermeture des tubes
+        res = close(tubeLectureClient);
+        myassert(res != -1, "Impossible de fermer le tube lecture client");
+
+        res = close(tubeEcritureClient);
+        myassert(res != -1, "Impossible de fermer le tube écriture client");
     }
 }
 
