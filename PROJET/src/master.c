@@ -75,10 +75,14 @@ void loop(int writeToWorker, int receiveFromWorker)
             orderToSendToClient = W_ORDER_STOP;
             res = write(writeToWorker, &orderToSendToClient, sizeof(int));
             myassert(res != -1, "Impossible d'envoyer un ordre au worker depuis le master\n");
+            fprintf(stderr,"j'ai écrit");
             res = read(receiveFromWorker, &responseFromWorker, sizeof(int));
             myassert(res != -1, "Impossible de recevoir un message du worker dans le master\n'");
+            printf("reponse worker : %d",responseFromWorker);
             if (responseFromWorker == W_STOPPED)
             {
+                printf("recu l'arret du worker");
+                close(receiveFromWorker);
                 orderToSendToClient = STOPPED; // the master will stop
                 res = write(tubeEcritureClient, &orderToSendToClient, sizeof(int));
                 myassert(res != -1, "Impossible d'écrire au client depuis le master\n");

@@ -12,6 +12,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <math.h>
 
 #include "myassert.h"
 
@@ -52,6 +53,8 @@ static void parseArgs(int argc, char * argv[] /*, structure à remplir*/)
     donnee.valeurAssocie = atoi(argv[2]);
     donnee.fdToWorker = atoi(argv[3]);
     donnee.fdToMaster = atoi(argv[4]);
+
+    
 
 }
 
@@ -96,8 +99,9 @@ int creerSuite(int val){
         
         donnee.aSuite = true;
 
-        return fds[1];
+        
     }
+    return fds[1];
 }
 
 /************************************************************************
@@ -121,6 +125,7 @@ void loop()
     {
         int order;
         read(donnee.fdToWorker,&order,sizeof(int));
+
         if(order == W_ORDER_STOP){
             if(donnee.aSuite){
                 write(donnee.workerToWorker, &order, sizeof(int) );
@@ -132,7 +137,7 @@ void loop()
                 int ret = W_STOPPED;
                 write(donnee.fdToMaster,&ret,sizeof(int));
                 close(donnee.fdToWorker);
-                close(donnee.fdToMaster);
+                //close(donnee.fdToMaster);
                 break;
             }
         }
