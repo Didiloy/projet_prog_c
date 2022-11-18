@@ -75,10 +75,10 @@ void loop(int writeToWorker, int receiveFromWorker)
             orderToSendToClient = W_ORDER_STOP;
             res = write(writeToWorker, &orderToSendToClient, sizeof(int));
             myassert(res != -1, "Impossible d'envoyer un ordre au worker depuis le master\n");
-            fprintf(stderr,"j'ai écrit");
+            fprintf(stderr, "j'ai écrit");
             res = read(receiveFromWorker, &responseFromWorker, sizeof(int));
             myassert(res != -1, "Impossible de recevoir un message du worker dans le master\n'");
-            printf("reponse worker : %d",responseFromWorker);
+            printf("reponse worker : %d", responseFromWorker);
             if (responseFromWorker == W_STOPPED)
             {
                 printf("recu l'arret du worker");
@@ -236,12 +236,11 @@ int main(int argc, char *argv[])
     int fdToMaster[2];
     ret = pipe(fdToMaster);
     myassert(ret != -1, "Impossible de créer le tube lecture vers le master du worker\n");
-    close(fdToMaster[1]);
+    printf("fdTomaster[0] : %d , fdToMaster[1]: %d\n", fdToMaster[0], fdToMaster[1]);
 
     int fds[2];
     ret = pipe(fds);
     myassert(ret != -1, "Impossible de créer le tube ecriture du master vers le worker\n");
-    close(fds[0]);
 
     ret = fork();
     if (ret == 0)
@@ -269,6 +268,9 @@ int main(int argc, char *argv[])
     }
     else
     {
+        close(fdToMaster[1]);
+        close(fds[0]);
+
         int tmp;
         ret = read(fdToMaster[0], &tmp, sizeof(int));
         myassert(ret != -1, "Impossible de récupérer la réponse du worker");
