@@ -44,14 +44,19 @@ static void usage(const char *exeName, const char *message)
 
 static void parseArgs(int argc, char *argv[] /*, structure à remplir*/)
 {
-    if (argc != 4)
+    fprintf(stderr,"avant le if avec argc : %d\n",argc);
+    if (argc != 4){
+        fprintf(stderr,"dans le if\n");
         usage(argv[0], "Nombre d'arguments incorrect");
+    }
+        
 
+    fprintf(stderr,"if réussi\n");
     // remplir la structure
     donnee.aSuite = false;
-    donnee.valeurAssocie = atoi(argv[2]);
-    donnee.fdToWorker = atoi(argv[3]);
-    donnee.fdToMaster = atoi(argv[4]);
+    donnee.valeurAssocie = atoi(argv[1]);
+    donnee.fdToWorker = atoi(argv[2]);
+    donnee.fdToMaster = atoi(argv[3]);
 }
 
 bool pasPremier(int val)
@@ -169,12 +174,15 @@ void loop()
 
 int main(int argc, char *argv[])
 {
+    
     parseArgs(argc, argv /*, structure à remplir*/);
+    
 
     // Si on est créé c'est qu'on est un nombre premier
     // Envoyer au master un message positif pour dire
     // que le nombre testé est bien premier
     int a = W_IS_PRIME;
+    fprintf(stderr,"a : %d\n",a);
     write(donnee.fdToMaster, &a, sizeof(int));
 
     loop();
