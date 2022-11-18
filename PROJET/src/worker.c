@@ -62,6 +62,42 @@ bool pasPremier(int val){
 
 int creerSuite(int val){
     //TODO créer suite et retourne le tube pour communiquer avec lui
+    int fds[2];
+    int ret = pipe(fds);
+    myassert(ret != -1, "Impossible de créer le tube ecriture du worker vers le worker\n");
+    
+    ret = fork();
+    if (ret == 0){
+        close(fds[1]);
+
+        char lecture[(int)((ceil(log10(fds[0])) + 1) * sizeof(char))]; // déclarer un tableau de caractère de la bonne taille
+        sprintf(lecture, "%d", fds[0]);
+
+        char ecriture[(int)((ceil(log10(donnee.fdToMaster)) + 1) * sizeof(char))]; // déclarer un tableau de caractère de la bonne taille
+        sprintf(ecriture, "%d", donnee.fdToMaster);
+
+        char valeur[(int)((ceil(log10(val)) + 1) * sizeof(char))];
+        sprintf(valeur, "%d", val);
+
+        char *args[5];
+
+        args[0] = "worker";
+        args[1] = valeur;
+        args[2] = lecture;
+        args[3] = ecriture;
+        args[4] = "\0";
+
+        execv("worker", args);
+
+    }
+    else{
+        close(fds[0]);
+
+        
+        donnee.aSuite = true;
+
+        return fds[1];
+    }
 }
 
 /************************************************************************
@@ -88,21 +124,25 @@ void loop()
         if(order == W_ORDER_STOP){
             if(donnee.aSuite){
                 write(donnee.workerToWorker, &order, sizeof(int) );
-                //TODO suite
+                close(donnee.fdToWorker);
+                break;
+                
             }
             else{
                 int ret = W_STOPPED;
                 write(donnee.fdToMaster,&ret,sizeof(int));
+                close(donnee.fdToWorker);
+                close(donnee.fdToMaster);
                 break;
             }
         }
         else{
             if(order == donnee.valeurAssocie){
-                int ret = 6; /*a définir dans master_worker*/
+                int ret = W_IS_PRIME; 
                 write(donnee.fdToMaster,&ret,sizeof(int));
             }
             else if(pasPremier(order)){
-                int ret = 7; /*a définir dans master_worker*/
+                int ret = W_IS_NOT_PRIME; 
                 write(donnee.fdToMaster,&ret,sizeof(int));
             }
             else if(donnee.aSuite){
@@ -129,13 +169,14 @@ int main(int argc, char * argv[])
     // Si on est créé c'est qu'on est un nombre premier
     // Envoyer au master un message positif pour dire
     // que le nombre testé est bien premier
-    int a = 6; /*a définir dans master_worker*/
+    int a = W_IS_PRIME; 
     write(donnee.fdToMaster,&a,sizeof(int));
 
 
     loop();
 
     // libérer les ressources : fermeture des files descriptors par exemple
+    
 
 
     return EXIT_SUCCESS;
