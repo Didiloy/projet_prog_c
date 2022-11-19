@@ -44,19 +44,17 @@ static void usage(const char *exeName, const char *message)
 
 static void parseArgs(int argc, char *argv[] /*, structure à remplir*/)
 {
-    fprintf(stderr,"avant le if avec argc : %d\n",argc);
-    if (argc != 4){
-        fprintf(stderr,"dans le if\n");
+    if (argc != 4)
+    {
         usage(argv[0], "Nombre d'arguments incorrect");
     }
-        
 
-    fprintf(stderr,"if réussi\n");
     // remplir la structure
     donnee.aSuite = false;
     donnee.valeurAssocie = atoi(argv[1]);
     donnee.fdToWorker = atoi(argv[2]);
     donnee.fdToMaster = atoi(argv[3]);
+    // fprintf(stderr, "valeur associe %d fdToWorker %d fdToMaster %d\n", donnee.valeurAssocie, donnee.fdToWorker, donnee.fdToMaster);
 }
 
 bool pasPremier(int val)
@@ -174,16 +172,18 @@ void loop()
 
 int main(int argc, char *argv[])
 {
-    
+
     parseArgs(argc, argv /*, structure à remplir*/);
-    
 
     // Si on est créé c'est qu'on est un nombre premier
     // Envoyer au master un message positif pour dire
     // que le nombre testé est bien premier
     int a = W_IS_PRIME;
-    fprintf(stderr,"a : %d\n",a);
-    write(donnee.fdToMaster, &a, sizeof(int));
+    // fprintf(stderr, "a : %d\n", a);
+    // fprintf(stderr, "FdTOMaster %d\n", donnee.fdToMaster);
+    int ret = write(donnee.fdToMaster, &a, sizeof(int));
+    // perror("");
+    myassert(ret != -1, "Impossible d'écrire au master");
 
     loop();
 

@@ -40,9 +40,9 @@ static void usage(const char *exeName, const char *message)
 /************************************************************************
  * boucle principale de communication avec le client
  ************************************************************************/
-void loop(int writeToWorker, int receiveFromWorker)
+void loop(int writeToWorker, int receiveFromWorker, int semClient)
 {
-    printf("Dans la boucle \n");
+    printf("[MASTER] en attente d'ordre d'un du client... \n");
     int m = 2; // Plus grand nombre envoyé aux worker. 2 de base car on crée le premier worker avec 2
     int nombreDeNombreCalcule = 0;
     int plusGrandNombrePremierCalcule = 0;
@@ -74,15 +74,16 @@ void loop(int writeToWorker, int receiveFromWorker)
             printf("J'ai bien recu l'odre de m'arreter\n");
             orderToSendToClient = W_ORDER_STOP;
             res = write(writeToWorker, &orderToSendToClient, sizeof(int));
-            perror("");
+            // perror("");
             myassert(res != -1, "Impossible d'envoyer un ordre au worker depuis le master\n");
-            fprintf(stderr, "j'ai écrit");
+            fprintf(stderr, "j'ai transmis l'ordre au premier worker\n");
+
             res = read(receiveFromWorker, &responseFromWorker, sizeof(int));
             myassert(res != -1, "Impossible de recevoir un message du worker dans le master\n'");
-            printf("reponse worker : %d", responseFromWorker);
+            // printf("reponse worker : %d", responseFromWorker);
             if (responseFromWorker == W_STOPPED)
             {
-                printf("recu l'arret du worker");
+                printf("Les workers se sont bien stoppés \n");
                 close(receiveFromWorker);
                 orderToSendToClient = STOPPED; // the master will stop
                 res = write(tubeEcritureClient, &orderToSendToClient, sizeof(int));
@@ -92,6 +93,9 @@ void loop(int writeToWorker, int receiveFromWorker)
             {
                 // TODO si le worker ne peut pas s'arreter
             }
+            struct sembuf op = {0, -1, 0};
+            int r = semop(semClient, &op, 1);
+            myassert(r != -1, "Impossible de retirer 1 semaphore.");
             infini = false;
             break;
 
@@ -236,28 +240,28 @@ int main(int argc, char *argv[])
 
     int fdToMaster[2];
     ret = pipe(fdToMaster);
-    myassert(ret != -1, "Impossible de créer le tube lecture vers le master du worker\n");
+    myassert(ret != -1, "Impossible de créer le tube écriture du worker vers le master\n");
 
-    printf("fdMaster ecriture : %d ,  fdMaster lecture : %d\n", fdToMaster[1], fdToMaster[0]);
+    // fprintf(stderr, "fdMaster ecriture : %d ,  fdMaster lecture : %d\n", fdToMaster[1], fdToMaster[0]);
 
     int fds[2];
     ret = pipe(fds);
     myassert(ret != -1, "Impossible de créer le tube ecriture du master vers le worker\n");
 
-    printf("fds ecriture : %d ,  fdMaster lecture : %d\n", fds[1], fds[0]);
+    // fprintf(stderr, "fds ecriture : %d ,  fds lecture : %d\n", fds[1], fds[0]);
 
     ret = fork();
     if (ret == 0)
     {
-        // close(fds[1]);
-        // close(fdToMaster[0]);
+        close(fds[1]);
+        close(fdToMaster[0]);
         char lecture[(int)((ceil(log10(fds[0])) + 1) * sizeof(char))]; // déclarer un tableau de caractère de la bonne taille
         sprintf(lecture, "%d", fds[0]);
 
         char ecriture[(int)((ceil(log10(fdToMaster[1])) + 1) * sizeof(char))]; // déclarer un tableau de caractère de la bonne taille
         sprintf(ecriture, "%d", fdToMaster[1]);
 
-        printf("lecture : %s ,  ecriture : %s\n", lecture, ecriture);
+        // printf("lecture : %s ,  ecriture : %s\n", lecture, ecriture);
 
         /**
          * Ordre des paramètres du worker
@@ -270,23 +274,23 @@ int main(int argc, char *argv[])
         args[1] = "2";
         args[2] = lecture;
         args[3] = ecriture;
-        args[4] = "\0";
+        args[4] = NULL;
 
         execv("worker", args);
     }
     else
     {
-        // close(fds[0]);
-        // close(fdToMaster[1]);
+        close(fds[0]);
+        close(fdToMaster[1]);
         int tmp;
-
+        // fprintf(stderr, "Avant le read\n");
         ret = read(fdToMaster[0], &tmp, sizeof(int));
         myassert(ret != -1, "Impossible de récupérer la réponse du worker");
 
-        fprintf(stderr, "reponse worker 2 : %d\n", tmp);
+        fprintf(stderr, "Premier worker bien lancé\n");
 
         // boucle infinie
-        loop(fds[1], fdToMaster[0]);
+        loop(fds[1], fdToMaster[0], semClient);
         // destruction des tubes nommés, des sémaphores, ...
         ret = semctl(semClient, 0, IPC_RMID);
         myassert(ret != -1, "Impossible de supprimer le sémaphore client\n");
