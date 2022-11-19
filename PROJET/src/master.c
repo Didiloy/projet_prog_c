@@ -42,7 +42,6 @@ static void usage(const char *exeName, const char *message)
  ************************************************************************/
 void loop(int writeToWorker, int receiveFromWorker, int semClient)
 {
-    printf("[MASTER] en attente d'ordre d'un du client... \n");
     int m = 2; // Plus grand nombre envoyé aux worker. 2 de base car on crée le premier worker avec 2
     int nombreDeNombreCalcule = 0;
     int plusGrandNombrePremierCalcule = 0;
@@ -50,6 +49,7 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient)
     bool infini = true;
     while (infini)
     {
+        printf("[MASTER] en attente d'ordre d'un du client... \n");
         // - ouverture des tubes (cf. rq client.c)
         int tubeLectureClient = open(LECTURE_MASTER_CLIENT, O_RDONLY);
         myassert(tubeLectureClient != -1, "Impossible d'ouvrir le tube de lecture du client\n");
@@ -62,8 +62,8 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient)
         ssize_t ret = read(tubeLectureClient, &order, sizeof(int));
         myassert(ret != -1, "Impossible de lire dans le tube de lecture du client\n");
 
-        int responseFromWorker, res, orderToSendToClient, number;
-        printf("j'ai recu un ordre du client %d\n", order);
+        int res;
+        // printf("j'ai recu un ordre du client %d\n", order);
 
         switch (order)
         {
@@ -72,7 +72,6 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient)
         //       . envoyer un accusé de réception au client
         case ORDER_STOP:
             orderStop(writeToWorker, receiveFromWorker, tubeEcritureClient);
-
             struct sembuf op = {0, -1, 0};
             int r = semop(semClient, &op, 1);
             myassert(r != -1, "Impossible de retirer 1 au semaphore.");
@@ -89,60 +88,10 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient)
         //       . récupérer la réponse
         //       . la transmettre au client
         case ORDER_COMPUTE_PRIME:
-            printf("J'ai bien recu l'odre de vérifier si le nombre est premier\n");
-            ret = read(tubeLectureClient, &number, sizeof(int));
-            myassert(ret != -1, "Impossible de lire dans le tube de lecture du client\n");
-            printf("Je demande aux worker de vérifier si %d est premier.\n", number);
-            /**
-             * Si le nombre a calculer est plus petit que le plus grand nombre envoyé aux worker
-             *  on envoi juste le nombre, sinon on envoi tout les nombres entre le plus grand nombre -1
-             * puis après la boucle on renvoi le n pour tester si c'est premier
-             * envoyé et le nombre reçu du client
-             */
-            if (number > m)
-            {
-                printf("je rentre pour créer de worker\n");
-                for (int i = m + 1; i <= number - 1; i++) // créer la pipeline de worker
-                {
-                    // envoyer le nombre au premier worker
-                    ret = write(writeToWorker, &i, sizeof(int));
-                    myassert(ret != -1, "Impossible d'envoyer le nombre au worker");
-                    // attendre la réponse d'un des worker
-                    ret = read(receiveFromWorker, &responseFromWorker, sizeof(int));
-                    myassert(ret != -1, "Impossible de récupérer la réponse du worker");
-                }
-                m = number;
-            }
-            fprintf(stderr, "Je suis après le if \n");
-            // envoyé le nombre au premier worker
-            ret = write(writeToWorker, &number, sizeof(int));
-            perror("");
-            myassert(ret != -1, "Impossible d'envoyer le nombre au worker");
-            fprintf(stderr, "j'envoi le nombre au premier worker\n");
-            // attendre la réponse d'un des worker
-            ret = read(receiveFromWorker, &responseFromWorker, sizeof(int));
-            myassert(ret != -1, "Impossible de récupérer la réponse du worker");
-            printf("j'ai reçu un nombre du worker %d\n", responseFromWorker);
-
-            // Déclencher une erreur si la réponse du worker n'est pas une des réponses attendues
-            if (responseFromWorker != W_IS_PRIME && responseFromWorker != W_IS_NOT_PRIME)
-                myassert(responseFromWorker == W_IS_NOT_PRIME, "La réponse du worker n'est ni vrai ni faux");
-
-            orderToSendToClient = responseFromWorker == W_IS_PRIME ? M_NUMBER_IS_PRIME : M_NUMBER_IS_NOT_PRIME;
-
-            // Ecrire au client si le nombre est premier ou pas
-            res = write(tubeEcritureClient, &orderToSendToClient, sizeof(int));
-            myassert(res != -1, "Impossible d'écrire au client depuis le master\n");
-
+            res = orderComputePrime(writeToWorker, receiveFromWorker, tubeEcritureClient, tubeLectureClient, &m, &plusGrandNombrePremierCalcule);
             // ajouter +1 au nombre de nombres premier calculés par le master pour pouvoir l'envoyer en cas de demande du client
             nombreDeNombreCalcule += 1;
 
-            // changer la valeur du plus grand nombre premier calculé si le nombre est premier
-            if (orderToSendToClient == W_IS_PRIME)
-            {
-                if (number > plusGrandNombrePremierCalcule)
-                    plusGrandNombrePremierCalcule = number;
-            }
             break;
 
         // - si ORDER_HOW_MANY_PRIME

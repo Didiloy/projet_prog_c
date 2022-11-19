@@ -89,7 +89,7 @@ int creerSuite(int val)
         args[1] = valeur;
         args[2] = lecture;
         args[3] = ecriture;
-        args[4] = "\0";
+        args[4] = NULL;
 
         execv("worker", args);
     }
