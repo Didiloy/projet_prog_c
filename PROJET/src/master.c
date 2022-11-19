@@ -238,71 +238,69 @@ int main(int argc, char *argv[])
     ret = pipe(fdToMaster);
     myassert(ret != -1, "Impossible de créer le tube lecture vers le master du worker\n");
 
-    printf("fdMaster ecriture : %d ,  fdMaster lecture : %d\n",fdToMaster[1],fdToMaster[0]);
-    
+    printf("fdMaster ecriture : %d ,  fdMaster lecture : %d\n", fdToMaster[1], fdToMaster[0]);
 
     int fds[2];
     ret = pipe(fds);
     myassert(ret != -1, "Impossible de créer le tube ecriture du master vers le worker\n");
 
-    printf("fds ecriture : %d ,  fdMaster lecture : %d\n",fds[1],fds[0]);
+    printf("fds ecriture : %d ,  fdMaster lecture : %d\n", fds[1], fds[0]);
 
     ret = fork();
     if (ret == 0)
-        //close(fds[1]);
-        //close(fdToMaster[0]);
+        // close(fds[1]);
+        // close(fdToMaster[0]);
         char lecture[(int)((ceil(log10(fds[0])) + 1) * sizeof(char))]; // déclarer un tableau de caractère de la bonne taille
-        sprintf(lecture, "%d", fds[0]);
+    sprintf(lecture, "%d", fds[0]);
 
-        char ecriture[(int)((ceil(log10(fdToMaster[1])) + 1) * sizeof(char))]; // déclarer un tableau de caractère de la bonne taille
-        sprintf(ecriture, "%d", fdToMaster[1]);
+    char ecriture[(int)((ceil(log10(fdToMaster[1])) + 1) * sizeof(char))]; // déclarer un tableau de caractère de la bonne taille
+    sprintf(ecriture, "%d", fdToMaster[1]);
 
-        printf("lecture : %s ,  ecriture : %s\n",lecture,ecriture);
+    printf("lecture : %s ,  ecriture : %s\n", lecture, ecriture);
 
-        /**
-         * Ordre des paramètres du worker
-         * - le nombre dont il va s'occuper
-         * - le tube pour recevoir du worker d'avant
-         * - le tube pour écrire au master
-         */
-        char *args[5];
-        args[0] = "worker";
-        args[1] = "2";
-        args[2] = lecture;
-        args[3] = ecriture;
-        args[4] = "\0";
+    /**
+     * Ordre des paramètres du worker
+     * - le nombre dont il va s'occuper
+     * - le tube pour recevoir du worker d'avant
+     * - le tube pour écrire au master
+     */
+    char *args[5];
+    args[0] = "worker";
+    args[1] = "2";
+    args[2] = lecture;
+    args[3] = ecriture;
+    args[4] = "\0";
 
-        execv("worker", args);
-        
-    }
-    else
-    {
-        //close(fds[0]);
-        //close(fdToMaster[1]);
-        int tmp;
-        
-        ret = read(fdToMaster[0], &tmp, sizeof(int));
-        myassert(ret != -1, "Impossible de récupérer la réponse du worker");
+    execv("worker", args);
+}
+else
+{
+    // close(fds[0]);
+    // close(fdToMaster[1]);
+    int tmp;
 
-        fprintf(stderr,"reponse worker 2 : %d\n",tmp);
+    ret = read(fdToMaster[0], &tmp, sizeof(int));
+    myassert(ret != -1, "Impossible de récupérer la réponse du worker");
 
-        // boucle infinie
-        loop(fds[1], fdToMaster[0]);
-        // destruction des tubes nommés, des sémaphores, ...
-        ret = semctl(semClient, 0, IPC_RMID);
-        myassert(ret != -1, "Impossible de supprimer le sémaphore client\n");
+    fprintf(stderr, "reponse worker 2 : %d\n", tmp);
 
-        ret = semctl(semTableau, 0, IPC_RMID);
-        myassert(ret != -1, "Impossible de supprimer le sémaphore tableau\n");
+    // boucle infinie
+    loop(fds[1], fdToMaster[0]);
+    // destruction des tubes nommés, des sémaphores, ...
+    ret = semctl(semClient, 0, IPC_RMID);
+    myassert(ret != -1, "Impossible de supprimer le sémaphore client\n");
 
-        ret = unlink(ECRITURE_MASTER_CLIENT);
-        myassert(ret != -1, "Impossible de supprimer le tube ecriture client\n");
+    ret = semctl(semTableau, 0, IPC_RMID);
+    myassert(ret != -1, "Impossible de supprimer le sémaphore tableau\n");
 
-        ret = unlink(LECTURE_MASTER_CLIENT);
-        myassert(ret != -1, "Impossible de supprimer le tube lecture client\n");
-    }
+    ret = unlink(ECRITURE_MASTER_CLIENT);
+    myassert(ret != -1, "Impossible de supprimer le tube ecriture client\n");
 
-    return EXIT_SUCCESS;
+    ret = unlink(LECTURE_MASTER_CLIENT);
+    myassert(ret != -1, "Impossible de supprimer le tube lecture client\n");
+}
+
+return EXIT_SUCCESS;
 }
 
 // N'hésitez pas à faire des fonctions annexes ; si les fonctions main
