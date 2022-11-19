@@ -71,31 +71,11 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient)
         //       . envoyer ordre de fin au premier worker et attendre sa fin
         //       . envoyer un accusé de réception au client
         case ORDER_STOP:
-            printf("J'ai bien recu l'odre de m'arreter\n");
-            orderToSendToClient = W_ORDER_STOP;
-            res = write(writeToWorker, &orderToSendToClient, sizeof(int));
-            // perror("");
-            myassert(res != -1, "Impossible d'envoyer un ordre au worker depuis le master\n");
-            fprintf(stderr, "j'ai transmis l'ordre au premier worker\n");
+            orderStop(writeToWorker, receiveFromWorker, tubeEcritureClient);
 
-            res = read(receiveFromWorker, &responseFromWorker, sizeof(int));
-            myassert(res != -1, "Impossible de recevoir un message du worker dans le master\n'");
-            // printf("reponse worker : %d", responseFromWorker);
-            if (responseFromWorker == W_STOPPED)
-            {
-                printf("Les workers se sont bien stoppés \n");
-                close(receiveFromWorker);
-                orderToSendToClient = STOPPED; // the master will stop
-                res = write(tubeEcritureClient, &orderToSendToClient, sizeof(int));
-                myassert(res != -1, "Impossible d'écrire au client depuis le master\n");
-            }
-            else
-            {
-                // TODO si le worker ne peut pas s'arreter
-            }
             struct sembuf op = {0, -1, 0};
             int r = semop(semClient, &op, 1);
-            myassert(r != -1, "Impossible de retirer 1 semaphore.");
+            myassert(r != -1, "Impossible de retirer 1 au semaphore.");
             infini = false;
             break;
 

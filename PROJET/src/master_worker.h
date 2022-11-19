@@ -1,4 +1,6 @@
 #ifndef MASTER_WORKER_H
+#include "master_client.h"
+#include <unistd.h>
 #define MASTER_WORKER_H
 
 // On peut mettre ici des éléments propres au couple master/worker :
@@ -14,13 +16,15 @@
 #define W_IS_PRIME 1
 #define W_IS_NOT_PRIME 0
 
-typedef struct DonneeWorker{
+typedef struct DonneeWorker
+{
     int valeurAssocie;
     bool aSuite;
     int fdToMaster;
     int fdToWorker;
     int workerToWorker;
-    
-}DonneeWorker;
 
+} DonneeWorker;
+
+void orderStop(int writeToWorker, int receiveFromWorker, int tubeEcritureClient);
 #endif

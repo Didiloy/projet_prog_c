@@ -97,7 +97,7 @@ int attendrePassage()
 
     int ret = semop(semClient, &operation, 1);
     myassert(ret != -1, "Impossible de faire une opération sur le sémaphore depuis le client");
-    fprintf(stderr, "-1 Bien fait sur le sémaphore %d\n", semClient);
+    // fprintf(stderr, "-1 Bien fait sur le sémaphore %d\n", semClient);
     return semClient;
 }
 
@@ -209,7 +209,6 @@ int main(int argc, char *argv[])
     {
         // entrer en section critique
         int sem = attendrePassage();
-        fprintf(stderr, "sem créé dans le main %d\n", sem);
         // ouvrir les tubes nommés
         int fd_Ecriture = open(LECTURE_MASTER_CLIENT, O_WRONLY);
         myassert(fd_Ecriture != -1, "Impossible d'ouvrire le tube écriture depuis le client");
