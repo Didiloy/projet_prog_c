@@ -248,59 +248,60 @@ int main(int argc, char *argv[])
 
     ret = fork();
     if (ret == 0)
+    {
         // close(fds[1]);
         // close(fdToMaster[0]);
         char lecture[(int)((ceil(log10(fds[0])) + 1) * sizeof(char))]; // déclarer un tableau de caractère de la bonne taille
-    sprintf(lecture, "%d", fds[0]);
+        sprintf(lecture, "%d", fds[0]);
 
-    char ecriture[(int)((ceil(log10(fdToMaster[1])) + 1) * sizeof(char))]; // déclarer un tableau de caractère de la bonne taille
-    sprintf(ecriture, "%d", fdToMaster[1]);
+        char ecriture[(int)((ceil(log10(fdToMaster[1])) + 1) * sizeof(char))]; // déclarer un tableau de caractère de la bonne taille
+        sprintf(ecriture, "%d", fdToMaster[1]);
 
-    printf("lecture : %s ,  ecriture : %s\n", lecture, ecriture);
+        printf("lecture : %s ,  ecriture : %s\n", lecture, ecriture);
 
-    /**
-     * Ordre des paramètres du worker
-     * - le nombre dont il va s'occuper
-     * - le tube pour recevoir du worker d'avant
-     * - le tube pour écrire au master
-     */
-    char *args[5];
-    args[0] = "worker";
-    args[1] = "2";
-    args[2] = lecture;
-    args[3] = ecriture;
-    args[4] = "\0";
+        /**
+         * Ordre des paramètres du worker
+         * - le nombre dont il va s'occuper
+         * - le tube pour recevoir du worker d'avant
+         * - le tube pour écrire au master
+         */
+        char *args[5];
+        args[0] = "worker";
+        args[1] = "2";
+        args[2] = lecture;
+        args[3] = ecriture;
+        args[4] = "\0";
 
-    execv("worker", args);
-}
-else
-{
-    // close(fds[0]);
-    // close(fdToMaster[1]);
-    int tmp;
+        execv("worker", args);
+    }
+    else
+    {
+        // close(fds[0]);
+        // close(fdToMaster[1]);
+        int tmp;
 
-    ret = read(fdToMaster[0], &tmp, sizeof(int));
-    myassert(ret != -1, "Impossible de récupérer la réponse du worker");
+        ret = read(fdToMaster[0], &tmp, sizeof(int));
+        myassert(ret != -1, "Impossible de récupérer la réponse du worker");
 
-    fprintf(stderr, "reponse worker 2 : %d\n", tmp);
+        fprintf(stderr, "reponse worker 2 : %d\n", tmp);
 
-    // boucle infinie
-    loop(fds[1], fdToMaster[0]);
-    // destruction des tubes nommés, des sémaphores, ...
-    ret = semctl(semClient, 0, IPC_RMID);
-    myassert(ret != -1, "Impossible de supprimer le sémaphore client\n");
+        // boucle infinie
+        loop(fds[1], fdToMaster[0]);
+        // destruction des tubes nommés, des sémaphores, ...
+        ret = semctl(semClient, 0, IPC_RMID);
+        myassert(ret != -1, "Impossible de supprimer le sémaphore client\n");
 
-    ret = semctl(semTableau, 0, IPC_RMID);
-    myassert(ret != -1, "Impossible de supprimer le sémaphore tableau\n");
+        ret = semctl(semTableau, 0, IPC_RMID);
+        myassert(ret != -1, "Impossible de supprimer le sémaphore tableau\n");
 
-    ret = unlink(ECRITURE_MASTER_CLIENT);
-    myassert(ret != -1, "Impossible de supprimer le tube ecriture client\n");
+        ret = unlink(ECRITURE_MASTER_CLIENT);
+        myassert(ret != -1, "Impossible de supprimer le tube ecriture client\n");
 
-    ret = unlink(LECTURE_MASTER_CLIENT);
-    myassert(ret != -1, "Impossible de supprimer le tube lecture client\n");
-}
+        ret = unlink(LECTURE_MASTER_CLIENT);
+        myassert(ret != -1, "Impossible de supprimer le tube lecture client\n");
+    }
 
-return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
 
 // N'hésitez pas à faire des fonctions annexes ; si les fonctions main
