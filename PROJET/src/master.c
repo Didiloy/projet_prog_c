@@ -74,6 +74,7 @@ void loop(int writeToWorker, int receiveFromWorker)
             printf("J'ai bien recu l'odre de m'arreter\n");
             orderToSendToClient = W_ORDER_STOP;
             res = write(writeToWorker, &orderToSendToClient, sizeof(int));
+            perror("");
             myassert(res != -1, "Impossible d'envoyer un ordre au worker depuis le master\n");
             fprintf(stderr, "j'ai écrit");
             res = read(receiveFromWorker, &responseFromWorker, sizeof(int));
@@ -236,20 +237,27 @@ int main(int argc, char *argv[])
     int fdToMaster[2];
     ret = pipe(fdToMaster);
     myassert(ret != -1, "Impossible de créer le tube lecture vers le master du worker\n");
-    printf("fdTomaster[0] : %d , fdToMaster[1]: %d\n", fdToMaster[0], fdToMaster[1]);
+
+    printf("fdMaster ecriture : %d ,  fdMaster lecture : %d\n",fdToMaster[1],fdToMaster[0]);
+    
 
     int fds[2];
     ret = pipe(fds);
     myassert(ret != -1, "Impossible de créer le tube ecriture du master vers le worker\n");
 
+    printf("fds ecriture : %d ,  fdMaster lecture : %d\n",fds[1],fds[0]);
+
     ret = fork();
     if (ret == 0)
-    {
+        //close(fds[1]);
+        //close(fdToMaster[0]);
         char lecture[(int)((ceil(log10(fds[0])) + 1) * sizeof(char))]; // déclarer un tableau de caractère de la bonne taille
         sprintf(lecture, "%d", fds[0]);
 
         char ecriture[(int)((ceil(log10(fdToMaster[1])) + 1) * sizeof(char))]; // déclarer un tableau de caractère de la bonne taille
         sprintf(ecriture, "%d", fdToMaster[1]);
+
+        printf("lecture : %s ,  ecriture : %s\n",lecture,ecriture);
 
         /**
          * Ordre des paramètres du worker
@@ -265,15 +273,19 @@ int main(int argc, char *argv[])
         args[4] = "\0";
 
         execv("worker", args);
+        
     }
     else
     {
-        close(fdToMaster[1]);
-        close(fds[0]);
-
+        //close(fds[0]);
+        //close(fdToMaster[1]);
         int tmp;
+        
         ret = read(fdToMaster[0], &tmp, sizeof(int));
         myassert(ret != -1, "Impossible de récupérer la réponse du worker");
+
+        fprintf(stderr,"reponse worker 2 : %d\n",tmp);
+
         // boucle infinie
         loop(fds[1], fdToMaster[0]);
         // destruction des tubes nommés, des sémaphores, ...
