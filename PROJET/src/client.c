@@ -158,7 +158,10 @@ void afficherReponse(int order, int reponse)
         printf("il y a eu %d demande", reponse);
         break;
     case ORDER_HIGHEST_PRIME:
-        printf("le nombre le plus grand demander est %d", reponse);
+        if (reponse == 0)
+            printf("Vous n'avez calculé aucun nombre premier\n");
+        else
+            printf("le nombre premier le plus grand demandé est %d", reponse);
         break;
     }
 }

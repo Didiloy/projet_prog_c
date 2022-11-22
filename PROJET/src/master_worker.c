@@ -93,12 +93,20 @@ int orderComputePrime(int writeToWorker, int receiveFromWorker, int tubeEcriture
     myassert(res != -1, "Impossible d'écrire au client depuis le master\n");
 
     // changer la valeur du plus grand nombre premier calculé si le nombre est premier
-    if (orderToSendToClient == W_IS_PRIME)
+    if (orderToSendToClient == M_NUMBER_IS_PRIME)
     {
         if (number > *plusGrandNombrePremierCalcule)
             *plusGrandNombrePremierCalcule = number;
-        // TODO ça n'écrit pas
     }
 
     return orderToSendToClient;
+}
+
+/**
+ * Send a number to the client via the appropriate tube
+ */
+void sendNumberToCLient(int tubeEcritureClient, int number)
+{
+    int res = write(tubeEcritureClient, &number, sizeof(int));
+    myassert(res != -1, "Impossible d'écrire au client depuis le master\n");
 }

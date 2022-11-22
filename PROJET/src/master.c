@@ -58,12 +58,9 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient)
         myassert(tubeEcritureClient != -1, "Impossible d'ouvrir le tube d'écriture pour le client\n");
 
         // - attente d'un ordre du client (via le tube nommé)
-        int order;
+        int order, res;
         ssize_t ret = read(tubeLectureClient, &order, sizeof(int));
         myassert(ret != -1, "Impossible de lire dans le tube de lecture du client\n");
-
-        int res;
-        // printf("j'ai recu un ordre du client %d\n", order);
 
         switch (order)
         {
@@ -73,8 +70,8 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient)
         case ORDER_STOP:
             orderStop(writeToWorker, receiveFromWorker, tubeEcritureClient);
             struct sembuf op = {0, -1, 0};
-            int r = semop(semClient, &op, 1);
-            myassert(r != -1, "Impossible de retirer 1 au semaphore.");
+            res = semop(semClient, &op, 1);
+            myassert(res != -1, "Impossible de retirer 1 au semaphore.");
             infini = false;
             break;
 
@@ -98,8 +95,7 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient)
         //       . transmettre la réponse au client
         case ORDER_HOW_MANY_PRIME:
             // Envoyer au client le nombre de nombre premuer calculés
-            res = write(tubeEcritureClient, &nombreDeNombreCalcule, sizeof(int));
-            myassert(res != -1, "Impossible d'écrire au client depuis le master\n");
+            sendNumberToCLient(tubeEcritureClient, nombreDeNombreCalcule);
             break;
 
         // - si ORDER_HIGHEST_PRIME
@@ -109,8 +105,7 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient)
         // - revenir en début de boucle
         case ORDER_HIGHEST_PRIME:
             // Envoyer au client le plus grand nombre premier calculé
-            res = write(tubeEcritureClient, &plusGrandNombrePremierCalcule, sizeof(int));
-            myassert(res != -1, "Impossible d'écrire au client depuis le master\n");
+            sendNumberToCLient(tubeEcritureClient, plusGrandNombrePremierCalcule);
             break;
 
         case ORDER_NONE:

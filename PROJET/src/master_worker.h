@@ -28,4 +28,5 @@ typedef struct DonneeWorker
 
 void orderStop(int writeToWorker, int receiveFromWorker, int tubeEcritureClient);
 int orderComputePrime(int writeToWorker, int receiveFromWorker, int tubeEcritureClient, int tubeLectureClient, int *m, int *plusGrandNombrePremierCalcule);
+void sendNumberToCLient(int tubeEcritureClient, int number);
 #endif
