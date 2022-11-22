@@ -40,7 +40,7 @@ static void usage(const char *exeName, const char *message)
 /************************************************************************
  * boucle principale de communication avec le client
  ************************************************************************/
-void loop(int writeToWorker, int receiveFromWorker, int semClient)
+void loop(int writeToWorker, int receiveFromWorker, int semClient,int semTubeClient)
 {
     int m = 2; // Plus grand nombre envoyé aux worker. 2 de base car on crée le premier worker avec 2
     int nombreDeNombreCalcule = 0;
@@ -125,6 +125,14 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient)
 
         res = close(tubeEcritureClient);
         myassert(res != -1, "Impossible de fermer le tube écriture client");
+
+        struct sembuf operation;
+        operation.sem_num = 0;
+        operation.sem_op = -1;
+        operation.sem_flg = 0;
+
+        ret = semop(semTubeClient, &operation, 1);
+        myassert(ret != -1, "Impossible de faire une opération sur le sémaphore depuis le master");
     }
 }
 
@@ -153,8 +161,14 @@ int main(int argc, char *argv[])
     int r = semop(semClient, &op, 1);
     myassert(r != -1, "Impossible de passer le semaphore a 1.");
 
-    int semTableau = semget(IPC_PRIVATE, 1, IPC_CREAT | IPC_EXCL | 0641);
-    myassert(semTableau != -1, "Impossible de créer le sémaphore tableau\n");
+    key_t cleTubeClient = ftok(NOM_FICHIER_TUBE, NUMERO_TUBE);
+    myassert(cleTubeClient != -1, "Impossible de créer la clé\n");
+
+    int semTubeClient = semget(cleTubeClient, 1, IPC_CREAT | IPC_EXCL | 0641);
+    // vu avec Daniel Menevaux : sémaphore
+    myassert(semTubeClient != -1, "Impossible de créer le sémaphore client\n");
+
+    
     // printf("%d\n", semTableau);
     // TODO peut etre passer le semaphore a 1
 
@@ -219,12 +233,12 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Premier worker bien lancé\n");
 
         // boucle infinie
-        loop(fds[1], fdToMaster[0], semClient);
+        loop(fds[1], fdToMaster[0], semClient, semTubeClient);
         // destruction des tubes nommés, des sémaphores, ...
         ret = semctl(semClient, 0, IPC_RMID);
         myassert(ret != -1, "Impossible de supprimer le sémaphore client\n");
 
-        ret = semctl(semTableau, 0, IPC_RMID);
+        ret = semctl(semTubeClient, 0, IPC_RMID);
         myassert(ret != -1, "Impossible de supprimer le sémaphore tableau\n");
 
         ret = unlink(ECRITURE_MASTER_CLIENT);
