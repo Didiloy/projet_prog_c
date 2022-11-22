@@ -40,7 +40,7 @@ static void usage(const char *exeName, const char *message)
 /************************************************************************
  * boucle principale de communication avec le client
  ************************************************************************/
-void loop(int writeToWorker, int receiveFromWorker, int semClient,int semTubeClient)
+void loop(int writeToWorker, int receiveFromWorker, int semClient, int semTubeClient)
 {
     int m = 2; // Plus grand nombre envoyé aux worker. 2 de base car on crée le premier worker avec 2
     int nombreDeNombreCalcule = 0;
@@ -85,7 +85,7 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient,int semTubeCli
         //       . récupérer la réponse
         //       . la transmettre au client
         case ORDER_COMPUTE_PRIME:
-            res = orderComputePrime(writeToWorker, receiveFromWorker, tubeEcritureClient, tubeLectureClient, &m, &plusGrandNombrePremierCalcule);
+            orderComputePrime(writeToWorker, receiveFromWorker, tubeEcritureClient, tubeLectureClient, &m, &plusGrandNombrePremierCalcule);
             // ajouter +1 au nombre de nombres premier calculés par le master pour pouvoir l'envoyer en cas de demande du client
             nombreDeNombreCalcule += 1;
 
@@ -95,7 +95,7 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient,int semTubeCli
         //       . transmettre la réponse au client
         case ORDER_HOW_MANY_PRIME:
             // Envoyer au client le nombre de nombre premuer calculés
-            sendNumberToCLient(tubeEcritureClient, nombreDeNombreCalcule);
+            sendNumberToClient(tubeEcritureClient, nombreDeNombreCalcule);
             break;
 
         // - si ORDER_HIGHEST_PRIME
@@ -105,7 +105,7 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient,int semTubeCli
         // - revenir en début de boucle
         case ORDER_HIGHEST_PRIME:
             // Envoyer au client le plus grand nombre premier calculé
-            sendNumberToCLient(tubeEcritureClient, plusGrandNombrePremierCalcule);
+            sendNumberToClient(tubeEcritureClient, plusGrandNombrePremierCalcule);
             break;
 
         case ORDER_NONE:
@@ -163,7 +163,6 @@ int main(int argc, char *argv[])
     // vu avec Daniel Menevaux : sémaphore
     myassert(semTubeClient != -1, "Impossible de créer le sémaphore client\n");
 
-    
     // printf("%d\n", semTableau);
     // TODO peut etre passer le semaphore a 1
 

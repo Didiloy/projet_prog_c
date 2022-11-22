@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <math.h>
+#include <sys/wait.h>
 
 #include "myassert.h"
 
@@ -129,15 +130,14 @@ void loop()
             if (donnee.aSuite)
             {
                 write(donnee.workerToWorker, &order, sizeof(int));
+                wait(NULL);
+                close(donnee.workerToWorker);
                 close(donnee.fdToWorker);
                 break;
             }
             else
             {
-                int ret = W_STOPPED;
-                write(donnee.fdToMaster, &ret, sizeof(int));
                 close(donnee.fdToWorker);
-                // close(donnee.fdToMaster);
                 break;
             }
         }
@@ -179,10 +179,8 @@ int main(int argc, char *argv[])
     // Envoyer au master un message positif pour dire
     // que le nombre testé est bien premier
     int a = W_IS_PRIME;
-    // fprintf(stderr, "a : %d\n", a);
-    // fprintf(stderr, "FdTOMaster %d\n", donnee.fdToMaster);
+
     int ret = write(donnee.fdToMaster, &a, sizeof(int));
-    // perror("");
     myassert(ret != -1, "Impossible d'écrire au master");
 
     loop();
