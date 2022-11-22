@@ -75,15 +75,7 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient, int semTubeCl
             infini = false;
             break;
 
-        // - si ORDER_COMPUTE_PRIME
-        //       . récupérer le nombre N à tester provenant du client
-        //       . construire le pipeline jusqu'au nombre N-1 (si non encore fait) :
-        //             il faut connaître le plus grand nombre (M) déjà envoyé aux workers
-        //             on leur envoie tous les nombres entre M+1 et N-1
-        //             note : chaque envoie déclenche une réponse des workers
-        //       . envoyer N dans le pipeline
-        //       . récupérer la réponse
-        //       . la transmettre au client
+            // - si ORDER_COMPUTE_PRIME
         case ORDER_COMPUTE_PRIME:
             orderComputePrime(writeToWorker, receiveFromWorker, tubeEcritureClient, tubeLectureClient, &m, &plusGrandNombrePremierCalcule);
             // ajouter +1 au nombre de nombres premier calculés par le master pour pouvoir l'envoyer en cas de demande du client
@@ -92,17 +84,12 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient, int semTubeCl
             break;
 
         // - si ORDER_HOW_MANY_PRIME
-        //       . transmettre la réponse au client
         case ORDER_HOW_MANY_PRIME:
-            // Envoyer au client le nombre de nombre premuer calculés
+            // Envoyer au client le nombre de nombre premier calculés
             sendNumberToClient(tubeEcritureClient, nombreDeNombreCalcule);
             break;
 
         // - si ORDER_HIGHEST_PRIME
-        //       . transmettre la réponse au client
-        // - fermer les tubes nommés
-        // - attendre ordre du client avant de continuer (sémaphore : précédence)
-        // - revenir en début de boucle
         case ORDER_HIGHEST_PRIME:
             // Envoyer au client le plus grand nombre premier calculé
             sendNumberToClient(tubeEcritureClient, plusGrandNombrePremierCalcule);
@@ -141,51 +128,20 @@ int main(int argc, char *argv[])
         usage(argv[0], NULL);
 
     // - création des sémaphores
-    key_t cleClient = ftok(NOM_FICHIER, NUMERO);
-    myassert(cleClient != -1, "Impossible de créer la clé\n");
-
-    int semClient = semget(cleClient, 1, IPC_CREAT | IPC_EXCL | 0641);
-    // vu avec Daniel Menevaux : sémaphore
-    myassert(semClient != -1, "Impossible de créer le sémaphore client\n");
-    // printf("%d\n", semClient);
-    // mettre le sem a 1
-    struct sembuf op;
-    op.sem_num = 0;
-    op.sem_op = +1;
-    op.sem_flg = 0;
-    int r = semop(semClient, &op, 1);
-    myassert(r != -1, "Impossible de passer le semaphore a 1.");
-
-    key_t cleTubeClient = ftok(NOM_FICHIER_TUBE, NUMERO_TUBE);
-    myassert(cleTubeClient != -1, "Impossible de créer la clé\n");
-
-    int semTubeClient = semget(cleTubeClient, 1, IPC_CREAT | IPC_EXCL | 0641);
-    // vu avec Daniel Menevaux : sémaphore
-    myassert(semTubeClient != -1, "Impossible de créer le sémaphore client\n");
-
-    // printf("%d\n", semTableau);
-    // TODO peut etre passer le semaphore a 1
+    int semClient = createSemClient();
+    int semTubeClient = createSemTubeClient();
 
     // - création des tubes nommés
-    int ret = mkfifo(ECRITURE_MASTER_CLIENT, MODE);
-    myassert(ret != -1, "Impossible de créer le tube ecriture client\n");
-
-    ret = mkfifo(LECTURE_MASTER_CLIENT, MODE);
-    myassert(ret != -1, "Impossible de créer le tube lecture client\n");
+    createFifos();
 
     // - création du premier worker
-
     int fdToMaster[2];
-    ret = pipe(fdToMaster);
+    int ret = pipe(fdToMaster);
     myassert(ret != -1, "Impossible de créer le tube écriture du worker vers le master\n");
-
-    // fprintf(stderr, "fdMaster ecriture : %d ,  fdMaster lecture : %d\n", fdToMaster[1], fdToMaster[0]);
 
     int fds[2];
     ret = pipe(fds);
     myassert(ret != -1, "Impossible de créer le tube ecriture du master vers le worker\n");
-
-    // fprintf(stderr, "fds ecriture : %d ,  fds lecture : %d\n", fds[1], fds[0]);
 
     ret = fork();
     if (ret == 0)
@@ -229,21 +185,8 @@ int main(int argc, char *argv[])
         // boucle infinie
         loop(fds[1], fdToMaster[0], semClient, semTubeClient);
         // destruction des tubes nommés, des sémaphores, ...
-        ret = semctl(semClient, 0, IPC_RMID);
-        myassert(ret != -1, "Impossible de supprimer le sémaphore client\n");
-
-        ret = semctl(semTubeClient, 0, IPC_RMID);
-        myassert(ret != -1, "Impossible de supprimer le sémaphore tableau\n");
-
-        ret = unlink(ECRITURE_MASTER_CLIENT);
-        myassert(ret != -1, "Impossible de supprimer le tube ecriture client\n");
-
-        ret = unlink(LECTURE_MASTER_CLIENT);
-        myassert(ret != -1, "Impossible de supprimer le tube lecture client\n");
+        destroy(semClient, semTubeClient);
     }
 
     return EXIT_SUCCESS;
 }
-
-// N'hésitez pas à faire des fonctions annexes ; si les fonctions main
-// et loop pouvaient être "courtes", ce serait bien

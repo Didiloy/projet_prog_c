@@ -5,11 +5,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/wait.h>
+#include <sys/sem.h>
 #include "myassert.h"
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "master_worker.h"
-
-// fonctions éventuelles internes au fichier
 
 // fonctions éventuelles proposées dans le .h
 void orderStop(int writeToWorker, int receiveFromWorker, int tubeEcritureClient)
@@ -37,6 +42,14 @@ void orderStop(int writeToWorker, int receiveFromWorker, int tubeEcritureClient)
  */
 void orderComputePrime(int writeToWorker, int receiveFromWorker, int tubeEcritureClient, int tubeLectureClient, int *m, int *plusGrandNombrePremierCalcule)
 {
+    //       . récupérer le nombre N à tester provenant du client
+    //       . construire le pipeline jusqu'au nombre N-1 (si non encore fait) :
+    //             il faut connaître le plus grand nombre (M) déjà envoyé aux workers
+    //             on leur envoie tous les nombres entre M+1 et N-1
+    //             note : chaque envoie déclenche une réponse des workers
+    //       . envoyer N dans le pipeline
+    //       . récupérer la réponse
+    //       . la transmettre au client
     int number, responseFromWorker;
     printf("J'ai bien recu l'odre de vérifier si le nombre est premier\n");
     int ret = read(tubeLectureClient, &number, sizeof(int));
@@ -97,4 +110,61 @@ void sendNumberToClient(int tubeEcritureClient, int number)
 {
     int res = write(tubeEcritureClient, &number, sizeof(int));
     myassert(res != -1, "Impossible d'écrire au client depuis le master\n");
+}
+
+/**
+ * Create the semaphore to share with the client
+ */
+int createSemClient()
+{
+    key_t cleClient = ftok(NOM_FICHIER, NUMERO);
+    myassert(cleClient != -1, "Impossible de créer la clé\n");
+
+    int semClient = semget(cleClient, 1, IPC_CREAT | IPC_EXCL | 0641);
+    // vu avec Daniel Menevaux : sémaphore
+    myassert(semClient != -1, "Impossible de créer le sémaphore client\n");
+    // printf("%d\n", semClient);
+    // mettre le sem a 1
+    struct sembuf op;
+    op.sem_num = 0;
+    op.sem_op = +1;
+    op.sem_flg = 0;
+    int r = semop(semClient, &op, 1);
+    myassert(r != -1, "Impossible de passer le semaphore a 1.");
+    return semClient;
+}
+
+int createSemTubeClient()
+{
+    key_t cleTubeClient = ftok(NOM_FICHIER_TUBE, NUMERO_TUBE);
+    myassert(cleTubeClient != -1, "Impossible de créer la clé\n");
+
+    int semTubeClient = semget(cleTubeClient, 1, IPC_CREAT | IPC_EXCL | 0641);
+    // vu avec Daniel Menevaux : sémaphore
+    myassert(semTubeClient != -1, "Impossible de créer le sémaphore client\n");
+    return semTubeClient;
+}
+
+void createFifos()
+{
+    int ret = mkfifo(ECRITURE_MASTER_CLIENT, MODE);
+    myassert(ret != -1, "Impossible de créer le tube ecriture client\n");
+
+    ret = mkfifo(LECTURE_MASTER_CLIENT, MODE);
+    myassert(ret != -1, "Impossible de créer le tube lecture client\n");
+}
+
+void destroy(int semClient, int semTubeClient)
+{
+    int ret = semctl(semClient, 0, IPC_RMID);
+    myassert(ret != -1, "Impossible de supprimer le sémaphore client\n");
+
+    ret = semctl(semTubeClient, 0, IPC_RMID);
+    myassert(ret != -1, "Impossible de supprimer le sémaphore tableau\n");
+
+    ret = unlink(ECRITURE_MASTER_CLIENT);
+    myassert(ret != -1, "Impossible de supprimer le tube ecriture client\n");
+
+    ret = unlink(LECTURE_MASTER_CLIENT);
+    myassert(ret != -1, "Impossible de supprimer le tube lecture client\n");
 }
