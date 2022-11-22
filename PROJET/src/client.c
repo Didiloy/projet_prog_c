@@ -134,9 +134,25 @@ void endCritique(int sem, int ecriture, int lecture)
     ret = close(lecture);
     myassert(ret == 0, "Impossible de fermer le tube lecture dans le client");
 
-    struct sembuf operation = {0, +1, 0};
 
-    ret = semop(sem, &operation, 1);
+    // libérer le master une fois les tube férmer
+    key_t cleClient = ftok(NOM_FICHIER_TUBE, NUMERO_TUBE);
+    myassert(cleClient != -1, "Impossible de créer la clé\n");
+
+    int semClient = semget(cleClient, 1, 0);
+    myassert(semClient != -1, "Impossible de créer le sémaphore client\n");
+
+    struct sembuf operation1 = {0, +1, 0};
+
+    ret = semop(semClient, &operation1, 1);
+    myassert(ret != -1, "Impossible de faire une opération sur la sémaphore depuis le client");
+
+
+
+    //libérer la place pour un autre client
+    struct sembuf operation2 = {0, +1, 0};
+
+    ret = semop(sem, &operation2, 1);
     myassert(ret != -1, "Impossible de faire une opération sur la sémaphore depuis le client");
 }
 
