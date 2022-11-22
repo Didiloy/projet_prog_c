@@ -136,7 +136,6 @@ void endCritique(int sem, int ecriture, int lecture)
     ret = close(lecture);
     myassert(ret == 0, "Impossible de fermer le tube lecture dans le client");
 
-
     // libérer le master une fois les tube férmer
     key_t cleClient = ftok(NOM_FICHIER_TUBE, NUMERO_TUBE);
     myassert(cleClient != -1, "Impossible de créer la clé\n");
@@ -149,9 +148,7 @@ void endCritique(int sem, int ecriture, int lecture)
     ret = semop(semClient, &operation1, 1);
     myassert(ret != -1, "Impossible de faire une opération sur la sémaphore depuis le client");
 
-
-
-    //libérer la place pour un autre client
+    // libérer la place pour un autre client
     struct sembuf operation2 = {0, +1, 0};
 
     ret = semop(sem, &operation2, 1);
@@ -262,7 +259,7 @@ void afficherReponse(int order, int reponse)
         if (reponse == 0)
             printf("Vous n'avez calculé aucun nombre premier\n");
         else
-            printf("le nombre premier le plus grand demandé est %d", reponse);
+            printf("le nombre premier le plus grand demandé est %d\n", reponse);
         break;
     }
 }
@@ -275,6 +272,7 @@ int main(int argc, char *argv[])
 {
     int number = 0;
     int order = parseArgs(argc, argv, &number);
+    // printf("order  = %d\n", order); // pour éviter le warning
 
     // order peut valoir 5 valeurs (cf. master_client.h) :
     //      - ORDER_COMPUTE_PRIME_LOCAL
