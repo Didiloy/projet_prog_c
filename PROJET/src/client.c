@@ -155,6 +155,15 @@ void endCritique(int sem, int ecriture, int lecture)
     myassert(ret != -1, "Impossible de faire une opération sur la sémaphore depuis le client");
 }
 
+typedef struct tableauClient
+{
+    int tailleTab;
+    bool* tab;
+    int semTab;
+    int val;
+
+} tableauClient;
+
 void *threadTableau(void * s){
     tableauClient donnee = *(tableauClient *)s;
 
@@ -169,23 +178,17 @@ void *threadTableau(void * s){
         donnee.tab[i*donnee.val] = false;
     }
 
-    struct sembuf operation = {0, 1, 0};
+    struct sembuf operation2 = {0, 1, 0};
 
-    int ret = semop(donnee.semTab, &operation, 1);
+    ret = semop(donnee.semTab, &operation2, 1);
     myassert(ret != -1, "Impossible de faire une opération sur la sémaphore du tableau depuis le thread");
 }
 
-typedef struct tableauClient
-{
-    int tailleTab;
-    bool* tab;
-    int semTab;
-    int val;
 
-} tableauClient;
 
 void algoEratosthene(int N){
-    //TODO thread
+    
+    printf("début");
     tableauClient s;
     s.tab = malloc(sizeof(bool) * (N-1));
 
@@ -206,7 +209,8 @@ void algoEratosthene(int N){
     }
     s.tailleTab = N-1;
 
-    int tab[] = malloc((sqrt(N)-1) * sizeof(int));
+    int* tab;
+    tab = malloc((sqrt(N)-1) * sizeof(int));
 
     
     
@@ -302,8 +306,10 @@ int main(int argc, char *argv[])
     // N'hésitez pas à faire des fonctions annexes ; si la fonction main
     // ne dépassait pas une trentaine de lignes, ce serait bien.
 
+    fprintf(stderr,"avant if");
     if (order == ORDER_COMPUTE_PRIME_LOCAL)
     {
+        fprintf(stderr,"avant apelle");
         algoEratosthene(atoi(argv[2]));
     }
     else
