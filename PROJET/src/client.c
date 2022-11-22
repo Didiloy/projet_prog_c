@@ -12,6 +12,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <math.h>
+#include <pthread.h>
 
 #include "myassert.h"
 
@@ -156,6 +158,89 @@ void endCritique(int sem, int ecriture, int lecture)
     myassert(ret != -1, "Impossible de faire une opération sur la sémaphore depuis le client");
 }
 
+void *threadTableau(void * s){
+    tableauClient donnee = *(tableauClient *)s;
+
+
+    struct sembuf operation = {0, -1, 0};
+
+    int ret = semop(donnee.semTab, &operation, 1);
+    myassert(ret != -1, "Impossible de faire une opération sur la sémaphore du tableau depuis le thread");
+
+    for (int i = 1; donnee.val * i < donnee.tailleTab -1; i++)
+    {
+        donnee.tab[i*donnee.val] = false;
+    }
+
+    struct sembuf operation = {0, 1, 0};
+
+    int ret = semop(donnee.semTab, &operation, 1);
+    myassert(ret != -1, "Impossible de faire une opération sur la sémaphore du tableau depuis le thread");
+}
+
+typedef struct tableauClient
+{
+    int tailleTab;
+    bool* tab;
+    int semTab;
+    int val;
+
+} tableauClient;
+
+void algoEratosthene(int N){
+    //TODO thread
+    tableauClient s;
+    s.tab = malloc(sizeof(bool) * (N-1));
+
+    key_t cletab = ftok(NOM_FICHIER_TABLEAU, NUMERO_TABLEAU);
+    myassert(cletab != -1, "Impossible de créer la clé pour le tableau\n");
+
+    s.semTab = semget(cletab, 1, 0);
+    myassert(s.semTab != -1, "Impossible de créer le sémaphore pour le tableau\n");
+
+    struct sembuf operation = {0, +1, 0};
+
+    int ret = semop(s.semTab, &operation, 1);
+    myassert(ret != -1, "Impossible de faire une opération sur la sémaphore du tableau depuis le client");
+
+    for (int i = 0; i < N-1; i++)
+    {
+        s.tab[i] = true;
+    }
+    s.tailleTab = N-1;
+
+    int tab[] = malloc((sqrt(N)-1) * sizeof(int));
+
+    
+    
+    
+
+    for (int i = 0; i < sqrt(N)-1; i++)
+    {
+        s.val = i+2;
+        pthread_create(tab[i],NULL,threadTableau,&s);
+    }
+
+
+    for (int i = 0; i < sqrt(N)-1; i++)
+    {
+        ret = pthread_join(tab[i],NULL);
+        myassert(ret != 0,"Impossible d'attendre les thread");
+    }
+
+    for (int i = 0; i < N-1; i++)
+    {
+        if(s.tab[i] == true){
+            int j = i+2;
+            printf("%d est premier",&j);
+        }
+    }
+
+
+    free(tab);
+
+}
+
 void afficherReponse(int order, int reponse)
 {
     switch (order)
@@ -190,7 +275,6 @@ int main(int argc, char *argv[])
 {
     int number = 0;
     int order = parseArgs(argc, argv, &number);
-    printf("order  = %d\n", order); // pour éviter le warning
 
     // order peut valoir 5 valeurs (cf. master_client.h) :
     //      - ORDER_COMPUTE_PRIME_LOCAL
@@ -222,7 +306,7 @@ int main(int argc, char *argv[])
 
     if (order == ORDER_COMPUTE_PRIME_LOCAL)
     {
-        // TODO Je sais pas
+        algoEratosthene(atoi(argv[2]));
     }
     else
     {

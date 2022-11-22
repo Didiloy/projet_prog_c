@@ -25,6 +25,9 @@
 #define NOM_FICHIER_TUBE "master.c"
 #define NUMERO_TUBE 3
 
+#define NOM_FICHIER_TABLEAU "master.c"
+#define NUMERO_TABLEAU 3
+
 #define ECRITURE_MASTER_CLIENT "ecriture_master_client"
 #define MODE 0641
 #define LECTURE_MASTER_CLIENT "lecture_master_client"
