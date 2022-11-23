@@ -158,39 +158,38 @@ void endCritique(int sem, int ecriture, int lecture)
 typedef struct tableauClient
 {
     int tailleTab;
-    bool* tab;
+    bool *tab;
     int semTab;
     int val;
 
 } tableauClient;
 
-void *threadTableau(void * s){
+void *threadTableau(void *s)
+{
     tableauClient donnee = *(tableauClient *)s;
-
 
     struct sembuf operation = {0, -1, 0};
 
     int ret = semop(donnee.semTab, &operation, 1);
     myassert(ret != -1, "Impossible de faire une opération sur la sémaphore du tableau depuis le thread");
 
-    for (int i = 1; donnee.val * i < donnee.tailleTab -1; i++)
+    for (int i = 1; donnee.val * i < donnee.tailleTab - 1; i++)
     {
-        donnee.tab[i*donnee.val] = false;
+        donnee.tab[i * donnee.val] = false;
     }
 
     struct sembuf operation2 = {0, 1, 0};
 
     ret = semop(donnee.semTab, &operation2, 1);
     myassert(ret != -1, "Impossible de faire une opération sur la sémaphore du tableau depuis le thread");
+
+    return NULL;
 }
 
-
-
-void algoEratosthene(int N){
-    
-    printf("début");
+void algoEratosthene(int N)
+{
     tableauClient s;
-    s.tab = malloc(sizeof(bool) * (N-1));
+    s.tab = malloc(sizeof(bool) * (N - 1));
 
     key_t cletab = ftok(NOM_FICHIER_TABLEAU, NUMERO_TABLEAU);
     myassert(cletab != -1, "Impossible de créer la clé pour le tableau\n");
@@ -203,43 +202,44 @@ void algoEratosthene(int N){
     int ret = semop(s.semTab, &operation, 1);
     myassert(ret != -1, "Impossible de faire une opération sur la sémaphore du tableau depuis le client");
 
-    for (int i = 0; i < N-1; i++)
+    for (int i = 0; i < N - 1; i++)
     {
         s.tab[i] = true;
     }
-    s.tailleTab = N-1;
+    s.tailleTab = N - 1;
 
-    int* tab;
-    tab = malloc((sqrt(N)-1) * sizeof(int));
+    pthread_t *tableau;
+    // tableau = malloc((sqrt(N) - 1) * sizeof(int));
+    tableau = malloc((N) * sizeof(int)); // TODO quelle est la bonne taille ?
 
-    
-    
-    
-
-    for (int i = 0; i < sqrt(N)-1; i++)
+    for (int i = 0; i < sqrt(N) - 1; i++)
     {
-        s.val = i+2;
-        pthread_create(tab[i],NULL,threadTableau,&s);
+        // fprintf(stderr, "thread %d créé \n", i);
+        s.val = i + 2;
+        pthread_create(&tableau[i], NULL, threadTableau, &s);
     }
 
-
-    for (int i = 0; i < sqrt(N)-1; i++)
+    // fprintf(stderr, "Attendre les thread\n");
+    for (int i = 0; i < sqrt(N) - 1; i++)
     {
-        ret = pthread_join(tab[i],NULL);
-        myassert(ret != 0,"Impossible d'attendre les thread");
+        // fprintf(stderr, "j'attends %d qui est le thread %ld\n", i, tableau[i]);
+        ret = pthread_join(tableau[i], NULL);
+        // perror("");
+        myassert(ret == 0, "Impossible d'attendre les thread");
+        // fprintf(stderr, "j'ai fini d'attendre %d\n", i);
     }
 
-    for (int i = 0; i < N-1; i++)
+    // fprintf(stderr, "Je passe pas ici\n");
+    for (int i = 0; i < N - 1; i++)
     {
-        if(s.tab[i] == true){
-            int j = i+2;
-            printf("%d est premier",&j);
+        if (s.tab[i] == true)
+        {
+            int j = i + 2;
+            printf("%d est premier\n", j);
         }
     }
 
-
-    free(tab);
-
+    free(tableau);
 }
 
 void afficherReponse(int order, int reponse)
@@ -306,10 +306,8 @@ int main(int argc, char *argv[])
     // N'hésitez pas à faire des fonctions annexes ; si la fonction main
     // ne dépassait pas une trentaine de lignes, ce serait bien.
 
-    fprintf(stderr,"avant if");
     if (order == ORDER_COMPUTE_PRIME_LOCAL)
     {
-        fprintf(stderr,"avant apelle");
         algoEratosthene(atoi(argv[2]));
     }
     else

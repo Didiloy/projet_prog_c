@@ -168,3 +168,12 @@ void destroy(int semClient, int semTubeClient)
     ret = unlink(LECTURE_MASTER_CLIENT);
     myassert(ret != -1, "Impossible de supprimer le tube lecture client\n");
 }
+
+void openTubes(int *lectureClient, int *ecritureClient)
+{
+    *lectureClient = open(LECTURE_MASTER_CLIENT, O_RDONLY);
+    myassert(*lectureClient != -1, "Impossible d'ouvrir le tube de lecture du client\n");
+
+    *ecritureClient = open(ECRITURE_MASTER_CLIENT, O_WRONLY);
+    myassert(*ecritureClient != -1, "Impossible d'ouvrir le tube d'écriture pour le client\n");
+}

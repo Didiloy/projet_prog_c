@@ -42,9 +42,7 @@ static void usage(const char *exeName, const char *message)
  ************************************************************************/
 void loop(int writeToWorker, int receiveFromWorker, int semClient, int semTubeClient)
 {
-    int m = 2; // Plus grand nombre envoyé aux worker. 2 de base car on crée le premier worker avec 2
-    int nombreDeNombreCalcule = 0;
-    int plusGrandNombrePremierCalcule = 0;
+    int nombreDeNombreCalcule = 0, plusGrandNombrePremierCalcule = 0, m = 2; // Plus grand nombre envoyé aux worker. 2 de base car on crée le premier worker avec 2
     // boucle infinie :
     bool infini = true;
     while (infini)
@@ -56,7 +54,6 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient, int semTubeCl
 
         int tubeEcritureClient = open(ECRITURE_MASTER_CLIENT, O_WRONLY);
         myassert(tubeEcritureClient != -1, "Impossible d'ouvrir le tube d'écriture pour le client\n");
-
         // - attente d'un ordre du client (via le tube nommé)
         int order, res;
         ssize_t ret = read(tubeLectureClient, &order, sizeof(int));
@@ -108,11 +105,7 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient, int semTubeCl
         res = close(tubeEcritureClient);
         myassert(res != -1, "Impossible de fermer le tube écriture client");
 
-        struct sembuf operation;
-        operation.sem_num = 0;
-        operation.sem_op = -1;
-        operation.sem_flg = 0;
-
+        struct sembuf operation = {0, -1, 0};
         ret = semop(semTubeClient, &operation, 1);
         myassert(ret != -1, "Impossible de faire une opération sur le sémaphore depuis le master");
     }
@@ -176,11 +169,8 @@ int main(int argc, char *argv[])
         close(fds[0]);
         close(fdToMaster[1]);
         int tmp;
-        // fprintf(stderr, "Avant le read\n");
         ret = read(fdToMaster[0], &tmp, sizeof(int));
         myassert(ret != -1, "Impossible de récupérer la réponse du worker");
-
-        fprintf(stderr, "Premier worker bien lancé\n");
 
         // boucle infinie
         loop(fds[1], fdToMaster[0], semClient, semTubeClient);

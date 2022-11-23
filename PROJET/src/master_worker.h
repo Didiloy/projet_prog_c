@@ -33,4 +33,5 @@ int createSemClient();
 int createSemTubeClient();
 void createFifos();
 void destroy(int, int);
+void openTubes(int *lectureClient, int *ecritureClient);
 #endif
