@@ -1,6 +1,6 @@
 /**
-* @authors Lacaze Yon - Loya Dylan
-*/
+ * @authors Lacaze Yon - Loya Dylan
+ */
 #if defined HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -176,7 +176,7 @@ void loop()
 int main(int argc, char *argv[])
 {
 
-    parseArgs(argc, argv /*, structure à remplir*/);
+    parseArgs(argc, argv);
 
     // Si on est créé c'est qu'on est un nombre premier
     // Envoyer au master un message positif pour dire
