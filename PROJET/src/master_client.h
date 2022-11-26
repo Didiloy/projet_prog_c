@@ -1,6 +1,6 @@
 /**
-* @authors Lacaze Yon - Loya Dylan
-*/
+ * @authors Lacaze Yon - Loya Dylan
+ */
 #ifndef CLIENT_CRIBLE
 #define CLIENT_CRIBLE
 
@@ -37,5 +37,19 @@
 
 // bref n'hésitez à mettre nombre de fonctions avec des noms explicites
 // pour masquer l'implémentation
+void endCritique(int sem, int ecriture, int lecture);
+void afficherReponse(int order, int reponse);
+int attendrePassage();
+void *threadTableau(void *s);
+void algoEratosthene(int N);
+
+typedef struct tableauClient
+{
+    int tailleTab;
+    bool *tab;
+    int semTab;
+    int val;
+
+} tableauClient;
 
 #endif

@@ -1,7 +1,5 @@
 #!/bin/bash
 
 make clean
-make master
-make worker
-make client
+make all
 ./rmsempipe.sh
