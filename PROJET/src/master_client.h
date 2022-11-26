@@ -1,3 +1,6 @@
+/**
+* @authors Lacaze Yon - Loya Dylan
+*/
 #ifndef CLIENT_CRIBLE
 #define CLIENT_CRIBLE
 

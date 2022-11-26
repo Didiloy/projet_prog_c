@@ -1,3 +1,6 @@
+/**
+* @authors Lacaze Yon - Loya Dylan
+*/
 #ifdef HAVE_CONFIG
 #include "config.h"
 #endif

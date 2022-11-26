@@ -1,3 +1,6 @@
+/**
+* @authors Lacaze Yon - Loya Dylan
+*/
 #ifndef MASTER_WORKER_H
 #include "master_client.h"
 #include <unistd.h>

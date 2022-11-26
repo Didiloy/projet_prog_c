@@ -1,3 +1,6 @@
+/**
+* @authors Lacaze Yon - Loya Dylan
+*/
 #if defined HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -14,4 +17,3 @@
 // fonctions éventuelles internes au fichier
 
 // fonctions éventuelles proposées dans le .h
-

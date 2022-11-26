@@ -1,3 +1,6 @@
+/**
+* @authors Lacaze Yon - Loya Dylan
+*/
 #ifndef CONFIG_H
 #define CONFIG_H
 
