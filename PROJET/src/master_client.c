@@ -100,27 +100,31 @@ int attendrePassage()
 
 void *threadTableau(void *s)
 {
-    tableauClient donnee = *(tableauClient *)s;
-
-    struct sembuf operation = {0, -1, 0};
-
     
+    tableauClient donnee = *(tableauClient *)s;
+    int valeur = donnee.val;
 
-    int ret = semop(donnee.semTab, &operation, 1);
+    struct sembuf operation = {0, +1, 0};
+    int ret = semop(donnee.semVal, &operation, 1);
+    myassert(ret != -1, "Impossible de faire une opération sur la sémaphore de la valeur depuis le thread");
+
+    struct sembuf operation2 = {0, -1, 0};
+
+    ret = semop(donnee.semTab, &operation2, 1);
     myassert(ret != -1, "Impossible de faire une opération sur la sémaphore du tableau depuis le thread");
 
     
 
-    for (int i = 2; donnee.val * i < donnee.tailleTab + 1; i++)
+    for (int i = 2; valeur * i < donnee.tailleTab + 2; i++)
     {
-        int caseASuppr = (i*donnee.val) -2;
-        donnee.tab[caseASuppr] = false;
+        
+        donnee.tab[(i*valeur) -2] = false;
     }
     
 
-    struct sembuf operation2 = {0, 1, 0};
+    
 
-    ret = semop(donnee.semTab, &operation2, 1);
+    ret = semop(donnee.semTab, &operation, 1);
     myassert(ret != -1, "Impossible de faire une opération sur la sémaphore du tableau depuis le thread");
 
     return NULL;
@@ -134,7 +138,13 @@ void algoEratosthene(int N)
     key_t cletab = ftok(NOM_FICHIER_TABLEAU, NUMERO_TABLEAU);
     myassert(cletab != -1, "Impossible de créer la clé pour le tableau\n");
 
-    s.semTab = semget(cletab, 1, 0);
+    s.semTab = semget(cletab, 1, IPC_CREAT | IPC_EXCL | 0641);
+    myassert(s.semTab != -1, "Impossible de créer le sémaphore pour le tableau\n");
+
+    key_t cleValeur = ftok(NOM_FICHIER_VALEUR, NUMERO_VALEUR);
+    myassert(cleValeur != -1, "Impossible de créer la clé pour le tableau\n");
+
+    s.semVal = semget(cleValeur, 1, IPC_CREAT | IPC_EXCL | 0641);
     myassert(s.semTab != -1, "Impossible de créer le sémaphore pour le tableau\n");
 
     struct sembuf operation = {0, +1, 0};
@@ -149,17 +159,27 @@ void algoEratosthene(int N)
     s.tailleTab = N - 1;
 
     pthread_t *tableau;
-    // tableau = malloc((sqrt(N) - 1) * sizeof(int));
-    tableau = malloc((N) * sizeof(int)); // TODO quelle est la bonne taille ?
+    
+    //tableau = malloc((sqrt(N) - 1) * sizeof(int)); 
+    tableau = malloc(N * sizeof(int)); 
+
+    
 
     for (int i = 0; i < sqrt(N) - 1; i++)
     {
-        // fprintf(stderr, "thread %d créé \n", i);
-        s.val = i + 2;
+        //fprintf(stderr, "thread %d créé \n", i);
+        
+        s.val = i+2;
         pthread_create(&tableau[i], NULL, threadTableau, &s);
+        struct sembuf operation2 = {0, -1, 0};
+        ret = semop(s.semVal, &operation2, 1);
+        myassert(ret != -1, "Impossible de faire une opération sur la sémaphore de la valeur depuis le client");
+        
+        
     }
+    
 
-    // fprintf(stderr, "Attendre les thread\n");
+    /// fprintf(stderr, "Attendre les thread\n");
     for (int i = 0; i < sqrt(N) - 1; i++)
     {
         // fprintf(stderr, "j'attends %d qui est le thread %ld\n", i, tableau[i]);
@@ -168,6 +188,8 @@ void algoEratosthene(int N)
         myassert(ret == 0, "Impossible d'attendre les thread");
         // fprintf(stderr, "j'ai fini d'attendre %d\n", i);
     }
+    
+    
     
 
     // fprintf(stderr, "Je passe pas ici\n");
@@ -180,5 +202,13 @@ void algoEratosthene(int N)
         }
     }
 
+    ret = semctl(s.semVal, 0, IPC_RMID);
+    myassert(ret != -1, "Impossible de supprimer le sémaphore des valeur\n");
+
+    ret = semctl(s.semTab, 0, IPC_RMID);
+    myassert(ret != -1, "Impossible de supprimer le sémaphore du tableau\n");
+
     free(tableau);
+
+    
 }

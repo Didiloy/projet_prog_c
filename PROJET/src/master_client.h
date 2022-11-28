@@ -29,7 +29,10 @@
 #define NUMERO_TUBE 3
 
 #define NOM_FICHIER_TABLEAU "master.c"
-#define NUMERO_TABLEAU 3
+#define NUMERO_TABLEAU 4
+
+#define NOM_FICHIER_VALEUR "master.c"
+#define NUMERO_VALEUR 2
 
 #define ECRITURE_MASTER_CLIENT "ecriture_master_client"
 #define MODE 0641
@@ -48,6 +51,7 @@ typedef struct tableauClient
     int tailleTab;
     bool *tab;
     int semTab;
+    int semVal;
     int val;
 
 } tableauClient;

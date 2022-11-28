@@ -95,20 +95,7 @@ int envoyerValeur(int fd_Ecriture, char *val)
 
     return valeur;
 
-    /*bool tab[valeur];
-    for(int i =0; i<valeur-2; i++){
-        tab[i] = true;
-    }
-    for(int i =0; i<valeur-2; i++){
-        int v = i+2;
-        write(fd_Ecriture, &v, sizeof(int));
-
-        bool retour;
-        read(fd_Lecture,&retour,sizeof(bool));
-
-        tab[i] = retour;
-
-    }*/
+    
 }
 
 /************************************************************************
