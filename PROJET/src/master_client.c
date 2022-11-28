@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <math.h>
+#include <unistd.h>
 
 #include "myassert.h"
 
@@ -103,13 +104,19 @@ void *threadTableau(void *s)
 
     struct sembuf operation = {0, -1, 0};
 
+    
+
     int ret = semop(donnee.semTab, &operation, 1);
     myassert(ret != -1, "Impossible de faire une opération sur la sémaphore du tableau depuis le thread");
 
-    for (int i = 1; donnee.val * i < donnee.tailleTab - 1; i++)
+    
+
+    for (int i = 2; donnee.val * i < donnee.tailleTab + 1; i++)
     {
-        donnee.tab[i * donnee.val] = false;
+        int caseASuppr = (i*donnee.val) -2;
+        donnee.tab[caseASuppr] = false;
     }
+    
 
     struct sembuf operation2 = {0, 1, 0};
 
@@ -161,6 +168,7 @@ void algoEratosthene(int N)
         myassert(ret == 0, "Impossible d'attendre les thread");
         // fprintf(stderr, "j'ai fini d'attendre %d\n", i);
     }
+    
 
     // fprintf(stderr, "Je passe pas ici\n");
     for (int i = 0; i < N - 1; i++)
