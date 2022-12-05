@@ -1,6 +1,6 @@
 /**
-* @authors Lacaze Yon - Loya Dylan
-*/
+ * @authors Lacaze Yon - Loya Dylan
+ */
 #ifndef MASTER_WORKER_H
 #include "master_client.h"
 #include <unistd.h>
@@ -30,7 +30,7 @@ typedef struct DonneeWorker
 } DonneeWorker;
 
 void orderStop(int writeToWorker, int receiveFromWorker, int tubeEcritureClient);
-void orderComputePrime(int writeToWorker, int receiveFromWorker, int tubeEcritureClient, int tubeLectureClient, int *m, int *plusGrandNombrePremierCalcule);
+void orderComputePrime(int writeToWorker, int receiveFromWorker, int tubeEcritureClient, int tubeLectureClient, int *m, int *plusGrandNombrePremierCalcule, int *nombreDeNombreCalcule);
 void sendNumberToClient(int tubeEcritureClient, int number);
 int createSemClient();
 int createSemTubeClient();

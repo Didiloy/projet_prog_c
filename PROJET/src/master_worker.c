@@ -1,6 +1,6 @@
 /**
-* @authors Lacaze Yon - Loya Dylan
-*/
+ * @authors Lacaze Yon - Loya Dylan
+ */
 #if defined HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -43,7 +43,7 @@ void orderStop(int writeToWorker, int receiveFromWorker, int tubeEcritureClient)
  * Send the answer to the client
  * return if the the number is prime or not
  */
-void orderComputePrime(int writeToWorker, int receiveFromWorker, int tubeEcritureClient, int tubeLectureClient, int *m, int *plusGrandNombrePremierCalcule)
+void orderComputePrime(int writeToWorker, int receiveFromWorker, int tubeEcritureClient, int tubeLectureClient, int *m, int *plusGrandNombrePremierCalcule, int *nombreDeNombreCalcule)
 {
     //       . récupérer le nombre N à tester provenant du client
     //       . construire le pipeline jusqu'au nombre N-1 (si non encore fait) :
@@ -101,6 +101,7 @@ void orderComputePrime(int writeToWorker, int receiveFromWorker, int tubeEcritur
     // changer la valeur du plus grand nombre premier calculé si le nombre est premier
     if (orderToSendToClient == M_NUMBER_IS_PRIME)
     {
+        *nombreDeNombreCalcule += 1;
         if (number > *plusGrandNombrePremierCalcule)
             *plusGrandNombrePremierCalcule = number;
     }

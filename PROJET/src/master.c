@@ -1,6 +1,6 @@
 /**
-* @authors Lacaze Yon - Loya Dylan
-*/
+ * @authors Lacaze Yon - Loya Dylan
+ */
 #if defined HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -77,9 +77,9 @@ void loop(int writeToWorker, int receiveFromWorker, int semClient, int semTubeCl
 
             // - si ORDER_COMPUTE_PRIME
         case ORDER_COMPUTE_PRIME:
-            orderComputePrime(writeToWorker, receiveFromWorker, tubeEcritureClient, tubeLectureClient, &m, &plusGrandNombrePremierCalcule);
+            orderComputePrime(writeToWorker, receiveFromWorker, tubeEcritureClient, tubeLectureClient, &m, &plusGrandNombrePremierCalcule, &nombreDeNombreCalcule);
             // ajouter +1 au nombre de nombres premier calculés par le master pour pouvoir l'envoyer en cas de demande du client
-            nombreDeNombreCalcule += 1;
+            // nombreDeNombreCalcule += 1;
 
             break;
 
